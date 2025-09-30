@@ -53,10 +53,14 @@ AVAILABLE_MODELS = [
     { "label": "Gemini 2.5 Flash-Lite", "value": "gemini-2.5-flash-lite", "type": "gemini" },
     { "label": "Gemini 2.5 Flash", "value": "gemini-2.5-flash", "type": "gemini" },
     { "label": "Gemini 2.5 Pro", "value": "gemini-2.5-pro", "type": "gemini" },
+    { "label": "Gemini flash latest", "value": "gemini-flash-latest", "type": "gemini" },
     { "label": "Claude Sonnet 3.7", "value": "claude-3-7-sonnet-20250219", "type": "claude" },
     { "label": "Claude Sonnet4", "value": "claude-sonnet-4-20250514", "type": "claude" },
     { "label": "Claude Opus4.1", "value": "claude-opus-4-1-202508054", "type": "claude" },
+    { "label": "Claude Sonnet 4.5", "value": "claude-sonnet-4-5-20250929", "type": "claude" },
     { "label": "Grok4", "value": "grok-4-0709", "type": "grok" },
+    { "label": "Grok4 fast non-reasoning", "value": "grok-4-fast-non-reasoning-latest", "type": "grok" },
+    { "label": "Grok4 fast reasoning", "value": "grok-4-fast-reasoning-latest", "type": "grok" },
     { "label": "Grok Code Fast 1", "value": "grok-code-fast-1", "type": "grok" },
 ]
 DEFAULT_MODEL_INDEX = 0
