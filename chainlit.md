@@ -20,3 +20,15 @@ To modify the welcome screen, edit the `chainlit.md` file at the root of your pr
 ## Canvas機能の使い方(コードワークベンチ)
 ・Canvasコマンドを指定し、Canvas要素を表示します。
 ・HTMLファイルをEditorに貼り付けます。
+
+## New(2025/10/08)
+※Grokモデルのロジックを追加し、Grokが利用可能になりました。
+
+<アップデートしたモデル>
+・Codex5 モデルに対応
+・GPT5 proモデルに対応
+・Claude Sonnet4.5モデルに対応
+・Grok4 fast モデルに対応
+・Grok Code Fast 1 モデルに対応
+
+その他：画像生成モデル（DALL-E→GPT-4.1-mini）

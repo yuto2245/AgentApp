@@ -11,7 +11,9 @@ from typing import Optional
 # --- Provider SDKs ---
 from openai import OpenAI, AsyncOpenAI
 from anthropic import AsyncAnthropic
-#from groq import AsyncGroq
+from xai_sdk import Client
+from xai_sdk.chat import user, system,assistant
+from xai_sdk.search import SearchParameters
 from google import genai
 from google.genai.types import Tool, GenerateContentConfig, GoogleSearch, UrlContext
 
@@ -37,7 +39,7 @@ XAI_API_KEY = os.getenv("XAI_API_KEY")
 openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 openai_async_client = AsyncOpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 anthropic_client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
-#grok_client = AsyncGroq(api_key=XAI_API_KEY) if XAI_API_KEY else None
+xai_client = Client(api_key=XAI_API_KEY) if XAI_API_KEY else None
 gemini_client = genai.Client(api_key=GOOGLE_API_KEY) if GOOGLE_API_KEY else None
 
 # Chainlitのトレース機能
@@ -50,6 +52,8 @@ AVAILABLE_MODELS = [
     { "label": "GPT-5 Chat", "value": "gpt-5-chat-latest", "type": "openai" },
     { "label": "GPT-5 Nano", "value": "gpt-5-nano-2025-08-07", "type": "openai" },
     { "label": "GPT-5", "value": "gpt-5-2025-08-07", "type": "openai" },
+    { "label": "GPT-5 Pro", "value": "gpt-5-pro-2025-10-06", "type": "openai" },
+    { "label": "GPT-5-Codex", "value": "gpt-5-codex", "type": "openai" },
     { "label": "Gemini 2.5 Flash-Lite", "value": "gemini-2.5-flash-lite", "type": "gemini" },
     { "label": "Gemini 2.5 Flash", "value": "gemini-2.5-flash", "type": "gemini" },
     { "label": "Gemini 2.5 Pro", "value": "gemini-2.5-pro", "type": "gemini" },
@@ -90,7 +94,7 @@ DEFAULT_PROMPT_INDEX = 0
 # --- Command Setting ---
 COMMANDS_BASE = [
     { "id": "NanoBanana",   "label": "Nano Banana",   "icon": "image",  "description": "Generate a Nano Banana image with Gemini" },
-    { "id": "Picture",   "label": "Picture",   "icon": "image",  "description": "Use DALL·E to generate an image" },
+    { "id": "Picture",   "label": "Picture",   "icon": "image",  "description": "Use gpt4.1-mini to generate an image" },
     # Canvas command (single, smart)
     { "id": "Map", "label": "Map", "icon": "map", "description": "Open/Move map by place name or lat,lng" },
     # Coding Workbench
@@ -129,25 +133,29 @@ async def open_map(latitude: float = 35.681236, longitude: float = 139.767125, z
     key = f"map-canvas-{version}"
     await cl.ElementSidebar.set_elements([custom_element], key=key)
 
-async def open_code_workbench(code: Optional[str] = None, title: str = "Code Workbench"):
-    """サイドバーにエディタとプレビューを持つCode Workbenchを表示。"""
-    print(f"DEBUG: open_code_workbench called with code length = {len(code) if code else 0}")
-    print(f"DEBUG: title = '{title}'")
-    if code:
-        print(f"DEBUG: code preview = {code[:200]}...")
-    
+async def open_code_workbench(
+    code: Optional[str] = None,
+    title: str = "Code Workbench",
+    filename: str = "index.html",
+    language: str = "html",
+    read_only: bool = False,
+    auto_preview: bool = True,
+):
     version = cl.user_session.get("workbench_version", 0) + 1
     cl.user_session.set("workbench_version", version)
-    props = {"code": code, "title": title, "key": f"workbench-{version}"}
-    print(f"DEBUG: props = {props}")
-    print(f"DEBUG: props['code'] length = {len(props['code']) if props['code'] else 0}")
-    
+    props = {
+        "code": code,
+        "title": title,
+        "filename": filename,
+        "language": language,
+        "readOnly": read_only,
+        "autoPreview": auto_preview,
+        "key": f"workbench-{version}",
+    }
     element = cl.CustomElement(name="CodeWorkbench", props=props, display="inline")
-    print(f"DEBUG: CustomElement created with name=CodeWorkbench")
-    
     await cl.ElementSidebar.set_title("Code Workbench")
     await cl.ElementSidebar.set_elements([element])
-    print("DEBUG: ElementSidebar.set_elements completed")
+
 
 async def open_slide_preview(slides_json: str, title: str = "Slide Preview"):
     version = cl.user_session.get("slide_preview_version", 0) + 1
@@ -611,27 +619,46 @@ async def on_message(message: cl.Message):
                         pass
             return
         if cmd == "Picture":
-            # 画像生成（DALL·E 3）
+            # 画像生成（今後gpt-image-1-miniモデルも利用できるようにする）
             if not openai_async_client:
                 await cl.Message("エラー: OPENAI_API_KEYが設定されていないため画像生成を実行できません。", author="system").send()
                 return
             try:
-                response = await openai_async_client.images.generate(
-                    model="dall-e-3",
-                    prompt=message.content or "A scenic landscape in watercolor style",
-                    size="1024x1024",
+                response = await openai_async_client.responses.create(
+                    model="gpt-4.1-mini",
+                    input=message.content,
+                    tools=[{"type":"image_generation"}],
+                    #stream=True,
                 )
-                # ログ
-                print(f"Image generated. Response: {response}")
-                # 最初の画像URLを取得
-                image_url = response.data[0].url if response and getattr(response, 'data', None) else None
-                if not image_url:
-                    await cl.Message("画像のURLを取得できませんでした。", author="system").send()
+                # 生成された画像（base64）を取り出す
+                image_data = [
+                    output.result
+                    for output in response.output
+                    if getattr(output, "type", None) == "image_generation_call"
+                ]
+
+                if not image_data:
+                    await cl.Message("画像データを取得できませんでした。", author="system").send()
                     return
-                elements = [cl.Image(url=image_url)]
-                await cl.Message(f"Here's what I generated for **{message.content or '(no prompt)'}**", elements=elements).send()
+
+                image_bytes = base64.b64decode(image_data[0])
+
+                # Chainlit に画像として送信
+                img = cl.Image(
+                    content=image_bytes,
+                    mime="image/png",
+                    name="cat_and_otter.png"
+                )
+                await cl.Message(
+                    f"Here's what I generated for **{message.content}**",
+                    elements=[img]
+                ).send()
+
             except Exception as e:
-                await cl.Message(f"画像生成中にエラーが発生しました: {e}", author="system").send()
+                await cl.Message(
+                    f"画像生成中にエラーが発生しました: {e}",
+                    author="system"
+                ).send()
             return
         elif cmd == "Map":
             # シンプル: 入力が座標ならそのまま、地名なら q として渡す
@@ -966,6 +993,37 @@ async def on_message(message: cl.Message):
                     await open_code_workbench(code=html, title="Canvas: Code Workbench (from LLM)")
             except Exception as e:
                 print(f"extract_html_code(Claude) error: {e}")
+
+        # --- Grok Models ---
+        elif model_info["type"] == "grok":
+            if not xai_client:
+                answer_text = "エラー: XAI_API_KEYが設定されていません。"
+                await msg.stream_token(answer_text)
+                await msg.update()
+                return
+
+            system_prompt = system(system_prompt)
+            prompt = user(message.content)
+
+            # 応答生成
+            chat = xai_client.chat.create(
+                model=model_info["value"],
+                messages=[system_prompt, prompt],
+                search_parameters=SearchParameters(mode="auto"),
+            )
+            
+            for response, chunk in chat.stream():
+                answer_text += chunk.content
+                await msg.stream_token(chunk.content)
+                await msg.update()
+                #print(chunk.content, end="", flush=True)  # Each chunk's content
+
+            # 会話履歴を更新
+            if answer_text:
+                conversation_history.append(AIMessage(content=answer_text))
+                cl.user_session.set("conversation_history", conversation_history)
+            await msg.update()
+
 
     except Exception as e:
         error_message = f"エラーが発生しました: {str(e)}"
