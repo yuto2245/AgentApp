@@ -1038,3 +1038,23 @@ async def on_message(message: cl.Message):
             cl.user_session.set("conversation_history", conversation_history[:-1])
         msg.content = error_message
         await msg.update()
+
+@cl.set_starters
+async def set_starters():
+    return [
+        cl.Starter(
+            label="コードをリファクタリングして",
+            message="コードをリファクタリングして、解説をしてください",
+            #icon="/public/idea.svg",
+            ),
+        cl.Starter(
+            label="生成AIの最新ニュースを教えて",
+            message="今日発表された情報を元に生成AIの最新ニュースを教えて",
+            #icon="/public/learn.svg",
+            ),
+        cl.Starter(
+            label="Pythonのコードを書いて",
+            message="Pythonのサンプルコードを書いて、解説をしてください",
+            #icon="/public/terminal.svg",
+            ),
+        ]
