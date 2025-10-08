@@ -71,15 +71,17 @@ DEFAULT_MODEL_INDEX = 0
 
 # --- Profile Setting ---
 @cl.set_chat_profiles
-def chat_profile():
-    """チャット プロファイル セッター（プロフィール=システムプロンプト）。"""
+
+async def chat_profile():
     return [
         cl.ChatProfile(
             name=p["label"],
-            markdown_description=p["content"],
+            markdown_description=p["value"],
+            icon="https://picsum.photos/240",
         )
-        for p in SYSTEM_PROMPT_CHOICES
+        for p in AVAILABLE_MODELS
     ]
+
 
 # --- システムプロンプトの定義 ---
 current_time = now.strftime("%Y-%m-%d %H:%M")
@@ -484,7 +486,6 @@ async def start_chat():
     
     print(f"Initial setup: Model={initial_model['label']}, Prompt={SYSTEM_PROMPT_CHOICES[DEFAULT_PROMPT_INDEX]['label']}")
     
-    # 修正点① await を追加
     await setup_agent(settings)
 
 @cl.on_settings_update
@@ -776,7 +777,7 @@ async def on_message(message: cl.Message):
     system_prompt = cl.user_session.get("system_prompt")
     conversation_history = cl.user_session.get("conversation_history", [])
     
-    # 修正点③ None防御
+
     if model_info is None:
         model_info = AVAILABLE_MODELS[DEFAULT_MODEL_INDEX]
         cl.user_session.set("model", model_info)
