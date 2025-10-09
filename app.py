@@ -8,6 +8,7 @@ import chainlit as cl
 from chainlit.input_widget import Select, Switch
 from typing import Optional
 
+
 # --- Provider SDKs ---
 from openai import OpenAI, AsyncOpenAI
 from anthropic import AsyncAnthropic
@@ -68,13 +69,18 @@ AVAILABLE_MODELS = [
     { "label": "Grok Code Fast 1", "value": "grok-code-fast-1", "type": "grok" },
 ]
 DEFAULT_MODEL_INDEX = 16
-# --- icon img ---
+# --- icon img (デフォルトはdark)---
+color_mode = "dark"
+#darkモード、lightモードでimg_colorを切り替える
 ICON_IMG = {
-    "openai": "https://unpkg.com/@lobehub/icons-static-png@latest/dark/openai.png",
+    "openai": "/public/img/openai-",
     "claude": "/public/img/claude-color.svg",
     "gemini": "/public/img/gemini-color.svg",
-    "grok": "https://unpkg.com/@lobehub/icons-static-png@latest/dark/grok.png",
+    "grok": "/public/img/grok-",
     }
+
+ICON_IMG["openai"] += color_mode + ".png"   
+ICON_IMG["grok"] += color_mode + ".png"    
 
 # --- Profile Setting ---
 @cl.set_chat_profiles
