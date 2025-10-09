@@ -47,12 +47,12 @@ cl.instrument_openai()
 
 # --- モデルリストの定義 ---
 AVAILABLE_MODELS = [
-    { "label": "GPT-4o-mini", "value": "gpt-4o-mini", "type": "openai" },
-    { "label": "GPT-4.1", "value": "gpt-4.1-2025-04-14", "type": "openai" },
-    { "label": "GPT-5 Chat", "value": "gpt-5-chat-latest", "type": "openai" },
-    { "label": "GPT-5 Nano", "value": "gpt-5-nano-2025-08-07", "type": "openai" },
-    { "label": "GPT-5", "value": "gpt-5-2025-08-07", "type": "openai" },
-    { "label": "GPT-5 Pro", "value": "gpt-5-pro-2025-10-06", "type": "openai" },
+    { "label": "GPT-4o-mini", "value": "gpt-4o-mini", "type": "openai" ,"img":"./public/img/OpenAI-white-monoblossom.png"},
+    { "label": "GPT-4.1", "value": "gpt-4.1-2025-04-14", "type": "openai" ,"img":"./public/img/OpenAI-white-monoblossom.png"},
+    { "label": "GPT-5 Chat", "value": "gpt-5-chat-latest", "type": "openai" ,"img":"./public/img/OpenAI-white-monoblossom.png"},
+    { "label": "GPT-5 Nano", "value": "gpt-5-nano-2025-08-07", "type": "openai" ,"img":"./public/img/OpenAI-white-monoblossom.png"},
+    { "label": "GPT-5", "value": "gpt-5-2025-08-07", "type": "openai" ,"img":"./public/img/OpenAI-white-monoblossom.png"},
+    { "label": "GPT-5 Pro", "value": "gpt-5-pro-2025-10-06", "type": "openai" ,"img":"./public/img/OpenAI-white-monoblossom.png"},
     { "label": "GPT-5-Codex", "value": "gpt-5-codex", "type": "openai" },
     { "label": "Gemini 2.5 Flash-Lite", "value": "gemini-2.5-flash-lite", "type": "gemini" },
     { "label": "Gemini 2.5 Flash", "value": "gemini-2.5-flash", "type": "gemini" },
@@ -67,19 +67,21 @@ AVAILABLE_MODELS = [
     { "label": "Grok4 fast reasoning", "value": "grok-4-fast-reasoning-latest", "type": "grok" },
     { "label": "Grok Code Fast 1", "value": "grok-code-fast-1", "type": "grok" },
 ]
-DEFAULT_MODEL_INDEX = 0
+DEFAULT_MODEL_INDEX = 16
 
 # --- Profile Setting ---
 @cl.set_chat_profiles
-def chat_profile():
-    """チャット プロファイル セッター（プロフィール=システムプロンプト）。"""
+
+async def chat_profile():
     return [
         cl.ChatProfile(
             name=p["label"],
-            markdown_description=p["content"],
+            markdown_description=p["value"],
+            icon="https://picsum.photos/240",
         )
-        for p in SYSTEM_PROMPT_CHOICES
+        for p in AVAILABLE_MODELS
     ]
+
 
 # --- システムプロンプトの定義 ---
 current_time = now.strftime("%Y-%m-%d %H:%M")
@@ -93,11 +95,7 @@ DEFAULT_PROMPT_INDEX = 0
 
 # --- Command Setting ---
 COMMANDS_BASE = [
-    { "id": "NanoBanana",   "label": "Nano Banana",   "icon": "image",  "description": "Generate a Nano Banana image with Gemini" },
     { "id": "Picture",   "label": "Picture",   "icon": "image",  "description": "Use gpt4.1-mini to generate an image" },
-    # Canvas command (single, smart)
-    { "id": "Map", "label": "Map", "icon": "map", "description": "Open/Move map by place name or lat,lng" },
-    # Coding Workbench
     { "id": "Code", "label": "Code", "icon": "code", "description": "Open the coding workbench (editor/preview)" },
     { "id": "slide", "label": "Slide", "icon": "presentation", "description": "Generate a slide presentation from text" },
 ]
@@ -118,21 +116,6 @@ OPENAI_ALL_TOOLS = [
 ]
 
 # --- Chainlit App Logic ---
-
-# --- Canvas helpers (Map) ---
-async def open_map(latitude: float = 35.681236, longitude: float = 139.767125, zoom: int = 12, q: Optional[str] = None):
-    """CanvasへMapカスタム要素を表示する。qがあれば優先して検索表示。"""
-    map_props = {"latitude": latitude, "longitude": longitude, "zoom": zoom}
-    if q:
-        map_props["q"] = q
-    custom_element = cl.CustomElement(name="Map", props=map_props, display="inline")
-    await cl.ElementSidebar.set_title("canvas")
-    # バージョンをインクリメントしてキーを変え、確実に再マウント
-    version = cl.user_session.get("map_version", 0) + 1
-    cl.user_session.set("map_version", version)
-    key = f"map-canvas-{version}"
-    await cl.ElementSidebar.set_elements([custom_element], key=key)
-
 async def open_code_workbench(
     code: Optional[str] = None,
     title: str = "Code Workbench",
@@ -335,114 +318,6 @@ def extract_js_code(text: str) -> Optional[str]:
     m = FENCE_ANY_RE.search(t)
     return (m.group(2).strip() if m else None)
 
-@cl.step(type="tool")
-async def move_map_to(latitude: float, longitude: float, q: Optional[str] = None):
-    """地図を移動/検索する。qがあれば検索、なければ座標中心。"""
-    await open_map(latitude, longitude, q=q)
-    args = {"latitude": latitude, "longitude": longitude}
-    if q:
-        args["q"] = q
-    fn = cl.CopilotFunction(name="move-map", args=args)
-    await fn.acall()
-    return "Map moved!"
-
-# --- Geocoding helpers ---
-COORD_REGEX = re.compile(r"lat\s*[:=]?\s*([+-]?\d+\.\d+)\s*[,\s]\s*lng\s*[:=]?\s*([+-]?\d+\.\d+)", re.I)
-PAIR_REGEX = re.compile(r"([+-]?\d+\.\d+)\s*[,\s]\s*([+-]?\d+\.\d+)")
-
-def parse_coords_freeform(text: str):
-    """自由入力から座標らしき2つのfloatを抽出。成功で (lat, lng)。"""
-    if not text:
-        return None
-    t = text.replace("、", ",")  # 全角カンマ対応
-    m = COORD_REGEX.search(t)
-    if m:
-        try:
-            return (float(m.group(1)), float(m.group(2)))
-        except Exception:
-            pass
-    m2 = PAIR_REGEX.search(t)
-    if m2:
-        try:
-            return (float(m2.group(1)), float(m2.group(2)))
-        except Exception:
-            pass
-    return None
-
-async def geocode_with_llm(query: str):
-    """LLMを使って場所名から座標を推定する。成功で (lat, lng) を返す。失敗時は None。
-    1) まず自由入力から数値座標を直接抽出
-    2) OpenAI Responses API（あれば）で JSON {lat,lng}
-    3) Gemini（あれば）で JSON {lat,lng}
-    """
-    if not query:
-        return None
-
-    # 1) 文字列から直接抽出
-    coords = parse_coords_freeform(query)
-    if coords:
-        return coords
-
-    # 2) OpenAI
-    if openai_client:
-        try:
-            system = (
-                "You output only a JSON object with keys 'lat' and 'lng' (floats). "
-                "No prose, no explanations. Example: {\"lat\": 35.681236, \"lng\": 139.767125}."
-            )
-            resp = openai_client.responses.create(
-                model="gpt-4o-mini",
-                input=[
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": f"Return coordinates for: {query}"},
-                ],
-                temperature=0,
-                response_format={"type": "json_object"},
-            )
-            # 最優先で output_text を使い、無ければ全体文字列から抽出
-            text = getattr(resp, "output_text", None)
-            if not text:
-                raw = str(resp)
-                m = re.search(r"\{\s*\"lat\"\s*:.*?\}\s*", raw, re.S)
-                text = m.group(0) if m else None
-            data = json.loads(text) if text else None
-            if isinstance(data, dict) and "lat" in data and "lng" in data:
-                return (float(data["lat"]), float(data["lng"]))
-        except Exception as e:
-            print(f"geocode_with_llm(OpenAI) error: {e}")
-
-    # 3) Gemini
-    if gemini_client:
-        try:
-            prompt = (
-                "Return only a JSON object with keys 'lat' and 'lng' (floats). "
-                "No text. Example: {\"lat\": 35.681236, \"lng\": 139.767125}.\n"
-                f"Place: {query}"
-            )
-            stream = gemini_client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-                config=GenerateContentConfig(
-                    response_mime_type="application/json",
-                ),
-            )
-            # Geminiの簡易取り出し
-            text = None
-            if hasattr(stream, "candidates") and stream.candidates:
-                cand = stream.candidates[0]
-                if getattr(cand, "content", None):
-                    for part in (cand.content.parts or []):
-                        if getattr(part, "text", None):
-                            text = part.text
-                            break
-            if text:
-                data = json.loads(text)
-                if isinstance(data, dict) and "lat" in data and "lng" in data:
-                    return (float(data["lat"]), float(data["lng"]))
-        except Exception as e:
-            print(f"geocode_with_llm(Gemini) error: {e}")
-
-    return None
 
 @cl.on_chat_start
 async def start_chat():
@@ -484,7 +359,6 @@ async def start_chat():
     
     print(f"Initial setup: Model={initial_model['label']}, Prompt={SYSTEM_PROMPT_CHOICES[DEFAULT_PROMPT_INDEX]['label']}")
     
-    # 修正点① await を追加
     await setup_agent(settings)
 
 @cl.on_settings_update
@@ -516,108 +390,6 @@ async def on_message(message: cl.Message):
     # まずはコマンド押下を検出して通常フローを止める
     if getattr(message, "command", None):
         cmd = message.command
-        if cmd == "NanoBanana":
-            # Gemini を使った Nano Banana 画像生成
-            if not gemini_client:
-                await cl.Message("エラー: GOOGLE_API_KEYが設定されていないため画像生成を実行できません。", author="system").send()
-                return
-            prompt = message.content.strip() if (message.content and message.content.strip()) else (
-                "Create a picture of a nano banana dish in a fancy restaurant with a Gemini theme"
-            )
-            async with cl.Step(name="Nano Banana 画像生成中...") as step:
-                step.input = prompt
-                msg = cl.Message(content="画像を生成中です…")
-                await msg.send()
-                status_set_at = None
-                try:
-                    try:
-                        await cl.context.emitter.set_status("画像生成中...")
-                        status_set_at = time.monotonic()
-                    except Exception:
-                        pass
-
-                    def _run_gen():
-                        return gemini_client.models.generate_content(
-                            model="gemini-2.5-flash-image-preview",
-                            contents=[prompt],
-                        )
-
-                    response = await asyncio.to_thread(_run_gen)
-
-                    image_bytes = None
-                    image_mime = "image/png"
-                    alt_texts = []
-                    try:
-                        cand = response.candidates[0]
-                        if getattr(cand, "content", None):
-                            for part in (cand.content.parts or []):
-                                if getattr(part, "text", None):
-                                    alt_texts.append(part.text)
-                                elif getattr(part, "inline_data", None):
-                                    data = getattr(part.inline_data, "data", None)
-                                    if data:
-                                        mt = getattr(part.inline_data, "mime_type", None)
-                                        if mt:
-                                            image_mime = mt
-                                        # Google returns base64-encoded string sometimes
-                                        if isinstance(data, str):
-                                            try:
-                                                image_bytes = base64.b64decode(data)
-                                            except Exception:
-                                                image_bytes = None
-                                        else:
-                                            image_bytes = data
-                                        break
-                    except Exception:
-                        pass
-
-                    if not image_bytes:
-                        # 念のため別経路（parts直列）
-                        try:
-                            for cand in (response.candidates or []):
-                                if getattr(cand, "content", None):
-                                    for part in (cand.content.parts or []):
-                                        if getattr(part, "inline_data", None):
-                                            data = getattr(part.inline_data, "data", None)
-                                            if data:
-                                                mt = getattr(part.inline_data, "mime_type", None)
-                                                if mt:
-                                                    image_mime = mt
-                                                if isinstance(data, str):
-                                                    try:
-                                                        image_bytes = base64.b64decode(data)
-                                                    except Exception:
-                                                        image_bytes = None
-                                                else:
-                                                    image_bytes = data
-                                                break
-                                    if image_bytes:
-                                        break
-                        except Exception:
-                            pass
-
-                    if image_bytes:
-                        # Choose extension from mime
-                        ext = "png" if image_mime.endswith("png") else ("jpg" if image_mime.endswith("jpeg") or image_mime.endswith("jpg") else "img")
-                        img = cl.Image(content=image_bytes, name=f"nano_banana.{ext}", mime=image_mime)
-                        await cl.Message(content="Nano Banana 画像を生成しました。", elements=[img]).send()
-                        step.output = "Image generated"
-                    else:
-                        # テキストのみ返ってきた場合
-                        description = ("\n\n".join(alt_texts)).strip() if alt_texts else "画像データを取得できませんでした。"
-                        await cl.Message(description or "画像データを取得できませんでした。", author="system").send()
-                        step.output = description
-                except Exception as e:
-                    await cl.Message(f"エラーが発生しました: {e}", author="system").send()
-                finally:
-                    try:
-                        elapsed = (time.monotonic() - status_set_at) if status_set_at is not None else 0
-                        if elapsed < 0.3:
-                            await asyncio.sleep(max(0.0, 0.3 - elapsed))
-                        await cl.context.emitter.set_status("")
-                    except Exception:
-                        pass
-            return
         if cmd == "Picture":
             # 画像生成（今後gpt-image-1-miniモデルも利用できるようにする）
             if not openai_async_client:
@@ -659,24 +431,6 @@ async def on_message(message: cl.Message):
                     f"画像生成中にエラーが発生しました: {e}",
                     author="system"
                 ).send()
-            return
-        elif cmd == "Map":
-            # シンプル: 入力が座標ならそのまま、地名なら q として渡す
-            DEFAULT_LAT, DEFAULT_LNG = 35.681236, 139.767125
-            content = (message.content or "").strip()
-            if not content:
-                # デフォルトは東京駅（q指定で検索）
-                await move_map_to(DEFAULT_LAT, DEFAULT_LNG, q="東京駅")
-                await cl.Message("Map: 東京駅を表示しました").send()
-                return
-            coords = parse_coords_freeform(content)
-            if coords:
-                lat, lng = coords
-                await move_map_to(lat, lng)
-                await cl.Message(f"Map: lat={lat}, lng={lng}").send()
-            else:
-                await move_map_to(DEFAULT_LAT, DEFAULT_LNG, q=content)
-                await cl.Message(f"Map: 検索 '{content}'").send()
             return
         elif cmd == "Code":
             # エディタ/プレビューを表示。入力が無ければ直近のアシスタント発話から抽出。
@@ -776,7 +530,7 @@ async def on_message(message: cl.Message):
     system_prompt = cl.user_session.get("system_prompt")
     conversation_history = cl.user_session.get("conversation_history", [])
     
-    # 修正点③ None防御
+
     if model_info is None:
         model_info = AVAILABLE_MODELS[DEFAULT_MODEL_INDEX]
         cl.user_session.set("model", model_info)
