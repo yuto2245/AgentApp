@@ -47,12 +47,12 @@ cl.instrument_openai()
 
 # --- モデルリストの定義 ---
 AVAILABLE_MODELS = [
-    { "label": "GPT-4o-mini", "value": "gpt-4o-mini", "type": "openai" ,"img":"./public/img/OpenAI-white-monoblossom.png"},
-    { "label": "GPT-4.1", "value": "gpt-4.1-2025-04-14", "type": "openai" ,"img":"./public/img/OpenAI-white-monoblossom.png"},
-    { "label": "GPT-5 Chat", "value": "gpt-5-chat-latest", "type": "openai" ,"img":"./public/img/OpenAI-white-monoblossom.png"},
-    { "label": "GPT-5 Nano", "value": "gpt-5-nano-2025-08-07", "type": "openai" ,"img":"./public/img/OpenAI-white-monoblossom.png"},
-    { "label": "GPT-5", "value": "gpt-5-2025-08-07", "type": "openai" ,"img":"./public/img/OpenAI-white-monoblossom.png"},
-    { "label": "GPT-5 Pro", "value": "gpt-5-pro-2025-10-06", "type": "openai" ,"img":"./public/img/OpenAI-white-monoblossom.png"},
+    { "label": "GPT-4o-mini", "value": "gpt-4o-mini", "type": "openai"},
+    { "label": "GPT-4.1", "value": "gpt-4.1-2025-04-14", "type": "openai"},
+    { "label": "GPT-5 Chat", "value": "gpt-5-chat-latest", "type": "openai"},
+    { "label": "GPT-5 Nano", "value": "gpt-5-nano-2025-08-07", "type": "openai"},
+    { "label": "GPT-5", "value": "gpt-5-2025-08-07", "type": "openai"},
+    { "label": "GPT-5 Pro", "value": "gpt-5-pro-2025-10-06", "type": "openai"},
     { "label": "GPT-5-Codex", "value": "gpt-5-codex", "type": "openai" },
     { "label": "Gemini 2.5 Flash-Lite", "value": "gemini-2.5-flash-lite", "type": "gemini" },
     { "label": "Gemini 2.5 Flash", "value": "gemini-2.5-flash", "type": "gemini" },
@@ -68,6 +68,13 @@ AVAILABLE_MODELS = [
     { "label": "Grok Code Fast 1", "value": "grok-code-fast-1", "type": "grok" },
 ]
 DEFAULT_MODEL_INDEX = 16
+# --- icon img ---
+ICON_IMG = {
+    "openai": "https://unpkg.com/@lobehub/icons-static-png@latest/dark/openai.png",
+    "claude": "/public/img/claude-color.svg",
+    "gemini": "/public/img/gemini-color.svg",
+    "grok": "https://unpkg.com/@lobehub/icons-static-png@latest/dark/grok.png",
+    }
 
 # --- Profile Setting ---
 @cl.set_chat_profiles
@@ -77,7 +84,9 @@ async def chat_profile():
         cl.ChatProfile(
             name=p["label"],
             markdown_description=p["value"],
-            icon="https://picsum.photos/240",
+            # LobeHub CDNを利用
+            #icon=f"https://unpkg.com/@lobehub/icons-static-png@latest/dark/{p['type']}.png",
+            icon = ICON_IMG[p['type']],
         )
         for p in AVAILABLE_MODELS
     ]
@@ -374,6 +383,7 @@ async def setup_agent(settings: dict):
     """設定が更新されたときに呼び出されます。"""
     model_label = settings["model"]
     selected_model = next((m for m in AVAILABLE_MODELS if m["label"] == model_label), AVAILABLE_MODELS[DEFAULT_MODEL_INDEX])
+    
     cl.user_session.set("model", selected_model)
 
     prompt_label = settings["system_prompt"]
