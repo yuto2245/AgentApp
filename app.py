@@ -131,6 +131,18 @@ OPENAI_ALL_TOOLS = [
 ]
 
 # --- Chainlit App Logic ---
+@cl.on_chat_start
+async def start():
+    html = """
+    <style>
+      /* 背景を透過寄りにしたい場合に調整。不要なら削除可 */
+      body { background: transparent !important; }
+    </style>
+    <script src="/public/custom.js"></script>
+    """
+    await cl.Html(html)
+    await cl.Message(content="WebGL 背景を適用しました。").send()
+
 async def open_code_workbench(
     code: Optional[str] = None,
     title: str = "Code Workbench",
