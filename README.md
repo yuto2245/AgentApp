@@ -1,6 +1,7 @@
 # AI Chat Application
 
 複数のAIモデル（OpenAI, Gemini, Claude, Grok）と対話できるチャットアプリケーションです。
+![AgentApp](./public/img/AgentApp.png)
 
 ## 特徴
 
