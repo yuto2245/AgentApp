@@ -335,16 +335,24 @@ async def start_chat():
         print(f"Failed to set commands: {e}")
     # プロファイル選択（name=プロンプトのlabel）から初期プロンプトのインデックスを決定
     profile_name = cl.user_session.get("chat_profile")
+    initial_model_index = DEFAULT_MODEL_INDEX
+    if isinstance(profile_name, str):
+        for i, p in enumerate(AVAILABLE_MODELS):
+            if p["label"] == profile_name:
+                initial_model_index = i
+                break
+    #プロファイル選択
+    profile_name = cl.user_session.get("chat_profile")
     initial_prompt_index = DEFAULT_PROMPT_INDEX
     if isinstance(profile_name, str):
         for i, p in enumerate(SYSTEM_PROMPT_CHOICES):
             if p["label"] == profile_name:
                 initial_prompt_index = i
                 break
-
+    
     # 設定UI（モデルは設定パネルで切替。プロフィールはプロンプトのみ反映）
     settings = await cl.ChatSettings([
-        Select(id="model", label="モデル", values=[m["label"] for m in AVAILABLE_MODELS], initial_index=DEFAULT_MODEL_INDEX),
+        Select(id="model", label="モデル", values=[m["label"] for m in AVAILABLE_MODELS], initial_index=initial_model_index),
         Select(id="system_prompt", label="システムプロンプト（AIの性格・役割）", values=[p["label"] for p in SYSTEM_PROMPT_CHOICES], initial_index=initial_prompt_index),
         Switch(id="tools_enabled", label="Tools（Web検索/実行/MCP）", initial=tools_enabled),
     ]).send()
