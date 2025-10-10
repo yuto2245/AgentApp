@@ -75,9 +75,9 @@
   
       // ---- star layers (parallax)
       const starLayers = [];
-      addStarLayer(1000, 0.2); // 遠
-      addStarLayer(500, 0.5); // 中
-      addStarLayer(100, 1.0, true); // 近 + ランダム瞬き
+      addStarLayer(50, 0.2); // 遠
+      addStarLayer(20, 0.5); // 中
+      addStarLayer(20, 1.0, true); // 近 + ランダム瞬き
   
       function addStarLayer(count, parallax, twinkle=false){
         const g = new THREE.BufferGeometry();
@@ -88,7 +88,7 @@
           positions[3*i+1] = (Math.random()*2-1);   // y
           positions[3*i+2] = 0;
           // 小さめ基調。近層ほど大きく
-          sizes[i] = (Math.random()*0.75 + 0.25) * (0.7 + parallax*0.6);
+          sizes[i] = (Math.random()*1.25 + 0.4) * (1 + parallax*1);
         }
         g.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         g.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
