@@ -88,7 +88,7 @@
           positions[3*i+1] = (Math.random()*2-1);   // y
           positions[3*i+2] = 0;
           // 小さめ基調。近層ほど大きく
-          sizes[i] = (Math.random()*1.5 + 0.5) * (1.4 + parallax*1.2);
+          sizes[i] = (Math.random()*1.25 + 0.4) * (1 + parallax*1);
         }
         g.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         g.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
