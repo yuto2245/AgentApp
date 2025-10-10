@@ -142,7 +142,7 @@ async def start():
     """
     await cl.Html(html)
     await cl.Message(content="WebGL 背景を適用しました。").send()
-
+    
 async def open_code_workbench(
     code: Optional[str] = None,
     title: str = "Code Workbench",
