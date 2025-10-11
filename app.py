@@ -68,19 +68,14 @@ AVAILABLE_MODELS = [
     { "label": "Grok4 fast reasoning", "value": "grok-4-fast-reasoning-latest", "type": "grok" },
     { "label": "Grok Code Fast 1", "value": "grok-code-fast-1", "type": "grok" },
 ]
-DEFAULT_MODEL_INDEX = 16
-# --- icon img (デフォルトはdark)---
-color_mode = "dark"
+DEFAULT_MODEL_INDEX = 0
 #darkモード、lightモードでimg_colorを切り替える
 ICON_IMG = {
-    "openai": "/public/img/openai-",
-    "claude": "/public/img/claude-color.svg",
-    "gemini": "/public/img/gemini-color.svg",
-    "grok": "/public/img/grok-",
-    }
-
-ICON_IMG["openai"] += color_mode + ".png"   
-ICON_IMG["grok"] += color_mode + ".png"    
+    "openai": "/public/img/openai.png",
+    "claude": "/public/img/claude.png",
+    "gemini": "/public/img/gemini.png",
+    "grok": "/public/img/grok.png",
+    }   
 
 # --- Profile Setting ---
 @cl.set_chat_profiles
