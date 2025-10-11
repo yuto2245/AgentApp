@@ -10,6 +10,8 @@ from chainlit.user import User
 from chainlit.types import ThreadDict
 from typing import Optional
 
+from auth_utils import get_expected_credentials, verify_credentials
+
 
 # --- Provider SDKs ---
 from openai import OpenAI, AsyncOpenAI
@@ -168,14 +170,14 @@ async def open_code_workbench(
 async def authenticate_user(username: str, password: str) -> Optional[User]:
     """CHAINLIT_USERNAME/CHAINLIT_PASSWORD による簡易認証を提供する。"""
 
-    expected_username = os.getenv("CHAINLIT_USERNAME")
-    expected_password = os.getenv("CHAINLIT_PASSWORD")
+    expected_credentials = get_expected_credentials()
+    expected_username, expected_password = expected_credentials
 
     if not expected_username or not expected_password:
         print("[Auth] CHAINLIT_USERNAME または CHAINLIT_PASSWORD が設定されていません。認証をスキップします。")
         return None
 
-    if username == expected_username and password == expected_password:
+    if verify_credentials(username, password, expected_credentials):
         print(f"[Auth] ユーザー '{username}' が認証に成功しました。")
         return User(identifier=username, metadata={"role": "default"})
 

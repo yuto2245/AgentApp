@@ -48,6 +48,20 @@ chainlit run app.py -w
 
 起動後に表示されるログインフォームには、`.env` に設定した `CHAINLIT_USERNAME` と `CHAINLIT_PASSWORD` を入力してください。`CHAINLIT_AUTH_SECRET` は `chainlit create-secret` コマンドで生成した値を利用します。
 
+ログインに失敗する場合は、次のコマンドで現在の設定で認証が通るか事前に確認できます。
+
+```bash
+python scripts/verify_chainlit_auth.py
+```
+
+`.env` を使わずに任意の資格情報を直接チェックしたいときは、ログイン時に入力する値（`--username` / `--password`）と、Chainlit に設定したい想定の値（`--expected-username` / `--expected-password`）を引数で渡してください。
+
+```bash
+python scripts/verify_chainlit_auth.py \
+  --username you@example.com --password your-password \
+  --expected-username you@example.com --expected-password your-password
+```
+
 ### 認証に関する補足
 
 1. `CHAINLIT_AUTH_SECRET` をまだ用意していない場合は、以下のコマンドで生成します。
