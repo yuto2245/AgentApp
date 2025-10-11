@@ -34,8 +34,13 @@
    ANTHROPIC_API_KEY=your_anthropic_api_key
    XAI_API_KEY=your_xai_api_key
    # Chainlitのログインに利用する資格情報
+   # 単一ユーザーの場合は従来どおり USERNAME / PASSWORD を指定
    CHAINLIT_USERNAME=your_login_id
    CHAINLIT_PASSWORD=your_login_password
+   # 複数ユーザーを許可する場合は下記のいずれかを利用
+   # CHAINLIT_USERS="alice@example.com=alice-pass;bob@example.com=bob-pass"
+   # CHAINLIT_USERS_JSON='{"carol@example.com": "carol-pass"}'
+   # CHAINLIT_USERS_FILE=.chainlit/users.json
    # JWTベースの認証セッションを有効化する場合はシークレットも設定
    CHAINLIT_AUTH_SECRET=secret_generated_by_chainlit_cli
    # チャット履歴を永続化するSQLiteの保存先（未設定の場合は自動で ./.chainlit/local-data.db を利用）
@@ -53,18 +58,46 @@ chainlit run app.py -w
 
 `DATABASE_URL` を設定しなかった場合でも、アプリケーションは `.chainlit/local-data.db` にSQLiteデータベースを自動作成し、ログイン後のチャット履歴サイドバーから過去のスレッドを参照できるようになります。任意のストレージを使いたい場合は `DATABASE_URL` を明示的に指定してください。
 
+### 複数ユーザーの管理
+
+- `CHAINLIT_USERS` に `username=password` の組を `;`, `,`, 改行で区切って列挙すると、そのすべてがログイン可能になります。
+- `CHAINLIT_USERS_JSON` には `{"user@example.com": "pass"}` のような JSON 文字列を渡せます。複数の資格情報を JSON 配列や `{username, password}` を持つオブジェクトで記述することも可能です。
+- `CHAINLIT_USERS_FILE` でファイルパスを指すと、そのファイルの JSON / 改行区切り定義が読み込まれます。サンプル:
+
+  ```jsonc
+  // .chainlit/users.json
+  {
+    "alice@example.com": "alice-pass",
+    "bob@example.com": "bob-pass"
+  }
+  ```
+
+  ```text
+  # .chainlit/users.txt
+  carol@example.com=carol-pass
+  dave@example.com=dave-pass
+  ```
+
+複数の方法を同時に指定した場合は、`CHAINLIT_USERS_JSON` → `CHAINLIT_USERS` → `CHAINLIT_USERS_FILE` → `CHAINLIT_USERNAME` / `CHAINLIT_PASSWORD` の優先順位でマージされます。同じユーザー名が複数回出た場合は最後に読まれた値で上書きされます。
+
 ログインに失敗する場合は、次のコマンドで現在の設定で認証が通るか事前に確認できます。
 
 ```bash
 python scripts/verify_chainlit_auth.py
 ```
 
-`.env` を使わずに任意の資格情報を直接チェックしたいときは、ログイン時に入力する値（`--username` / `--password`）と、Chainlit に設定したい想定の値（`--expected-username` / `--expected-password`）を引数で渡してください。
+複数ユーザーを定義した場合や `.env` を使わずに任意の資格情報を直接チェックしたい場合は、ログイン時に入力する値（`--username` / `--password`）と、Chainlit に設定した資格情報を `--allowed-users` もしくは `--allowed-users-file` で渡してください。
 
 ```bash
 python scripts/verify_chainlit_auth.py \
   --username you@example.com --password your-password \
-  --expected-username you@example.com --expected-password your-password
+  --allowed-users "you@example.com=your-password;other@example.com=other-pass"
+```
+
+現在の設定でログイン可能なユーザー名一覧だけを確認したい場合は `--list-allowed` を付けてください。
+
+```bash
+python scripts/verify_chainlit_auth.py --list-allowed
 ```
 
 ### 認証に関する補足

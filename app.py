@@ -11,7 +11,7 @@ from chainlit.user import User
 from chainlit.types import ThreadDict
 from typing import Optional
 
-from auth_utils import get_expected_credentials, verify_credentials
+from auth_utils import get_allowed_users, verify_credentials
 
 
 # --- Provider SDKs ---
@@ -189,16 +189,20 @@ async def open_code_workbench(
 async def authenticate_user(username: str, password: str) -> Optional[User]:
     """CHAINLIT_USERNAME/CHAINLIT_PASSWORD による簡易認証を提供する。"""
 
-    expected_credentials = get_expected_credentials()
-    expected_username, expected_password = expected_credentials
+    allowed_users = get_allowed_users()
 
-    if not expected_username or not expected_password:
-        print("[Auth] CHAINLIT_USERNAME または CHAINLIT_PASSWORD が設定されていません。認証をスキップします。")
+    if not allowed_users:
+        print("[Auth] 利用可能な認証ユーザーが設定されていません。認証をスキップします。")
         return None
 
-    if verify_credentials(username, password, expected_credentials):
+    if verify_credentials(username, password, allowed_users):
         print(f"[Auth] ユーザー '{username}' が認証に成功しました。")
-        return User(identifier=username, metadata={"role": "default"})
+        metadata = {
+            "role": "default",
+            "email": username,
+            "displayName": username,
+        }
+        return User(identifier=username, metadata=metadata)
 
     print(f"[Auth] ユーザー '{username}' の認証に失敗しました。")
     return None
