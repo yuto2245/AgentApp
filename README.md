@@ -25,6 +25,7 @@
    ```bash
    pip install -r requirements.txt
    ```
+   - Chainlit の認証・データレイヤーは PostgreSQL ドライバの `asyncpg` をロードするため、上記コマンドでこのパッケージも必ずインストールされます。仮想環境を作り直した場合などは再度 `pip install -r requirements.txt` を実行し、`asyncpg` が入っていることを確認してください。
 
 4. 環境変数の設定（`.env` を作成）
    ```bash
