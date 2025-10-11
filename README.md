@@ -44,7 +44,9 @@
    # JWTベースの認証セッションを有効化する場合はシークレットも設定
    CHAINLIT_AUTH_SECRET=secret_generated_by_chainlit_cli
    # チャット履歴を永続化するSQLiteの保存先（未設定の場合は自動で ./.chainlit/local-data.db を利用）
+   # SQLite を明示的に指定する場合は CHAINLIT_DATA_LAYER=sqlalchemy もセットしてください。
    # DATABASE_URL=sqlite+aiosqlite:///absolute/path/to/.chainlit/local-data.db
+   # CHAINLIT_DATA_LAYER=sqlalchemy
    ```
 
 ## 起動方法
@@ -56,7 +58,7 @@ chainlit run app.py -w
 
 起動後に表示されるログインフォームには、`.env` に設定した `CHAINLIT_USERNAME` と `CHAINLIT_PASSWORD` を入力してください。`CHAINLIT_AUTH_SECRET` は `chainlit create-secret` コマンドで生成した値を利用します。
 
-`DATABASE_URL` を設定しなかった場合でも、アプリケーションは `.chainlit/local-data.db` にSQLiteデータベースを自動作成し、ログイン後のチャット履歴サイドバーから過去のスレッドを参照できるようになります。任意のストレージを使いたい場合は `DATABASE_URL` を明示的に指定してください。
+`DATABASE_URL` を設定しなかった場合でも、アプリケーションは `.chainlit/local-data.db` にSQLiteデータベースを自動作成し、ログイン後のチャット履歴サイドバーから過去のスレッドを参照できるようになります。任意のストレージを使いたい場合は `DATABASE_URL` を明示的に指定してください。その際、SQLite を利用する DSN（`sqlite:///` など）を指定したら `CHAINLIT_DATA_LAYER=sqlalchemy` も合わせて設定してください。これにより、Chainlit が PostgreSQL 用の `asyncpg` データレイヤーをロードしてしまう問題を防ぎ、SQLite 用ドライバで接続できるようになります。
 
 ### 複数ユーザーの管理
 

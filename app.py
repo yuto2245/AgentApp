@@ -5,6 +5,7 @@ import asyncio
 import time
 import base64
 from pathlib import Path
+from urllib.parse import urlparse
 import chainlit as cl
 from chainlit.input_widget import Select, Switch
 from chainlit.user import User
@@ -31,22 +32,33 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def ensure_local_database_url() -> None:
-    """Set a default sqlite database so Chainlit can persist threads locally."""
+def ensure_database_defaults() -> None:
+    """Ensure Chainlit can fall back to sqlite and select the right data layer."""
 
-    if os.environ.get("DATABASE_URL"):
-        return
+    database_url = os.environ.get("DATABASE_URL")
 
-    project_root = Path(__file__).resolve().parent
-    db_path = project_root / ".chainlit" / "local-data.db"
-    db_path.parent.mkdir(parents=True, exist_ok=True)
+    if not database_url:
+        project_root = Path(__file__).resolve().parent
+        db_path = project_root / ".chainlit" / "local-data.db"
+        db_path.parent.mkdir(parents=True, exist_ok=True)
 
-    database_url = f"sqlite+aiosqlite:///{db_path.as_posix()}"
-    os.environ["DATABASE_URL"] = database_url
-    print(f"[DB] DATABASE_URL was not set. Using local sqlite database at {db_path}.")
+        database_url = f"sqlite+aiosqlite:///{db_path.as_posix()}"
+        os.environ["DATABASE_URL"] = database_url
+        print(
+            f"[DB] DATABASE_URL was not set. Using local sqlite database at {db_path}."
+        )
+
+    parsed = urlparse(database_url)
+
+    if parsed.scheme.startswith("sqlite") and not os.environ.get("CHAINLIT_DATA_LAYER"):
+        os.environ["CHAINLIT_DATA_LAYER"] = "sqlalchemy"
+        print(
+            "[DB] sqlite URL detected. Defaulting CHAINLIT_DATA_LAYER to 'sqlalchemy' to "
+            "use Chainlit's SQLAlchemy data layer."
+        )
 
 
-ensure_local_database_url()
+ensure_database_defaults()
 
 # ---日付の取得 ---
 from datetime import datetime
