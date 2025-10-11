@@ -25,7 +25,7 @@
    ```bash
    pip install -r requirements.txt
    ```
-   - Chainlit の認証・データレイヤーは PostgreSQL ドライバの `asyncpg` をロードするため、上記コマンドでこのパッケージも必ずインストールされます。仮想環境を作り直した場合などは再度 `pip install -r requirements.txt` を実行し、`asyncpg` が入っていることを確認してください。
+   - チャット履歴の保存に必要な `asyncpg` と `aiosqlite` などのドライバも自動で導入されるため、追加の手動インストールは不要です。
 
 4. 環境変数の設定（`.env` を作成）
    ```bash
@@ -43,10 +43,8 @@
    # CHAINLIT_USERS_FILE=.chainlit/users.json
    # JWTベースの認証セッションを有効化する場合はシークレットも設定
    CHAINLIT_AUTH_SECRET=secret_generated_by_chainlit_cli
-   # チャット履歴を永続化するSQLiteの保存先（未設定の場合は自動で ./.chainlit/local-data.db を利用）
-   # SQLite を明示的に指定する場合は CHAINLIT_DATA_LAYER=sqlalchemy もセットしてください。
-   # DATABASE_URL=sqlite+aiosqlite:///absolute/path/to/.chainlit/local-data.db
-   # CHAINLIT_DATA_LAYER=sqlalchemy
+   # チャット履歴はアプリが自動生成する ./.chainlit/local-data.db (SQLite) に保存されます。
+   # DATABASE_URL や CHAINLIT_DATA_LAYER は設定不要です。環境に値が入っていてもアプリが上書きします。
    ```
 
 ## 起動方法
@@ -58,7 +56,7 @@ chainlit run app.py -w
 
 起動後に表示されるログインフォームには、`.env` に設定した `CHAINLIT_USERNAME` と `CHAINLIT_PASSWORD` を入力してください。`CHAINLIT_AUTH_SECRET` は `chainlit create-secret` コマンドで生成した値を利用します。
 
-`DATABASE_URL` を設定しなかった場合でも、アプリケーションは `.chainlit/local-data.db` にSQLiteデータベースを自動作成し、ログイン後のチャット履歴サイドバーから過去のスレッドを参照できるようになります。任意のストレージを使いたい場合は `DATABASE_URL` を明示的に指定してください。その際、SQLite を利用する DSN（`sqlite:///` など）を指定したら `CHAINLIT_DATA_LAYER=sqlalchemy` も合わせて設定してください。これにより、Chainlit が PostgreSQL 用の `asyncpg` データレイヤーをロードしてしまう問題を防ぎ、SQLite 用ドライバで接続できるようになります。
+アプリケーションは常に `.chainlit/local-data.db` に SQLite データベースを生成し、SQLAlchemy データレイヤーで接続します。`DATABASE_URL` や `CHAINLIT_DATA_LAYER` を独自に指定すると競合の原因になるため、設定しないでください（値が入っている場合でも起動時に上書きされます）。
 
 ### 複数ユーザーの管理
 
