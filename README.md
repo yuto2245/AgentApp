@@ -32,6 +32,11 @@
    GOOGLE_API_KEY=your_google_api_key
    ANTHROPIC_API_KEY=your_anthropic_api_key
    XAI_API_KEY=your_xai_api_key
+   # Chainlitのログインに利用する資格情報
+   CHAINLIT_USERNAME=your_login_id
+   CHAINLIT_PASSWORD=your_login_password
+   # JWTベースの認証セッションを有効化する場合はシークレットも設定
+   CHAINLIT_AUTH_SECRET=secret_generated_by_chainlit_cli
    ```
 
 ## 起動方法
@@ -40,6 +45,17 @@ chainlit run app.py -w
 ```
 
 アプリケーションは http://localhost:8000 で起動します。
+
+起動後に表示されるログインフォームには、`.env` に設定した `CHAINLIT_USERNAME` と `CHAINLIT_PASSWORD` を入力してください。`CHAINLIT_AUTH_SECRET` は `chainlit create-secret` コマンドで生成した値を利用します。
+
+### 認証に関する補足
+
+1. `CHAINLIT_AUTH_SECRET` をまだ用意していない場合は、以下のコマンドで生成します。
+   ```bash
+   chainlit create-secret
+   ```
+   表示された値を `.env` の `CHAINLIT_AUTH_SECRET` に貼り付けてください。
+2. ログイン画面では `.env` で指定した `CHAINLIT_USERNAME` / `CHAINLIT_PASSWORD` を入力します。ユーザー登録画面は提供していないため、環境変数で設定した資格情報をそのまま使用してください。
 
 ## 使用方法
 1. ブラウザで http://localhost:8000 を開く
