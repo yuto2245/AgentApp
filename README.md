@@ -37,6 +37,8 @@
    CHAINLIT_PASSWORD=your_login_password
    # JWTベースの認証セッションを有効化する場合はシークレットも設定
    CHAINLIT_AUTH_SECRET=secret_generated_by_chainlit_cli
+   # チャット履歴を永続化するSQLiteの保存先（未設定の場合は自動で ./.chainlit/local-data.db を利用）
+   # DATABASE_URL=sqlite+aiosqlite:///absolute/path/to/.chainlit/local-data.db
    ```
 
 ## 起動方法
@@ -47,6 +49,8 @@ chainlit run app.py -w
 アプリケーションは http://localhost:8000 で起動します。
 
 起動後に表示されるログインフォームには、`.env` に設定した `CHAINLIT_USERNAME` と `CHAINLIT_PASSWORD` を入力してください。`CHAINLIT_AUTH_SECRET` は `chainlit create-secret` コマンドで生成した値を利用します。
+
+`DATABASE_URL` を設定しなかった場合でも、アプリケーションは `.chainlit/local-data.db` にSQLiteデータベースを自動作成し、ログイン後のチャット履歴サイドバーから過去のスレッドを参照できるようになります。任意のストレージを使いたい場合は `DATABASE_URL` を明示的に指定してください。
 
 ログインに失敗する場合は、次のコマンドで現在の設定で認証が通るか事前に確認できます。
 

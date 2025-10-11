@@ -4,6 +4,7 @@ import json
 import asyncio
 import time
 import base64
+from pathlib import Path
 import chainlit as cl
 from chainlit.input_widget import Select, Switch
 from chainlit.user import User
@@ -28,6 +29,24 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 # --- Environment Loading ---
 from dotenv import load_dotenv
 load_dotenv()
+
+
+def ensure_local_database_url() -> None:
+    """Set a default sqlite database so Chainlit can persist threads locally."""
+
+    if os.environ.get("DATABASE_URL"):
+        return
+
+    project_root = Path(__file__).resolve().parent
+    db_path = project_root / ".chainlit" / "local-data.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    database_url = f"sqlite+aiosqlite:///{db_path.as_posix()}"
+    os.environ["DATABASE_URL"] = database_url
+    print(f"[DB] DATABASE_URL was not set. Using local sqlite database at {db_path}.")
+
+
+ensure_local_database_url()
 
 # ---日付の取得 ---
 from datetime import datetime
