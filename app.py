@@ -4,9 +4,15 @@ import json
 import asyncio
 import time
 import base64
+from pathlib import Path
+from urllib.parse import urlparse
 import chainlit as cl
 from chainlit.input_widget import Select, Switch
+from chainlit.user import User
+from chainlit.types import ThreadDict
 from typing import Optional
+
+from auth_utils import get_allowed_users, verify_credentials
 
 
 # --- Provider SDKs ---
@@ -24,6 +30,35 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 # --- Environment Loading ---
 from dotenv import load_dotenv
 load_dotenv()
+
+
+def ensure_database_defaults() -> None:
+    """Ensure Chainlit can fall back to sqlite and select the right data layer."""
+
+    database_url = os.environ.get("DATABASE_URL")
+
+    if not database_url:
+        project_root = Path(__file__).resolve().parent
+        db_path = project_root / ".chainlit" / "local-data.db"
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+
+        database_url = f"sqlite+aiosqlite:///{db_path.as_posix()}"
+        os.environ["DATABASE_URL"] = database_url
+        print(
+            f"[DB] DATABASE_URL was not set. Using local sqlite database at {db_path}."
+        )
+
+    parsed = urlparse(database_url)
+
+    if parsed.scheme.startswith("sqlite") and not os.environ.get("CHAINLIT_DATA_LAYER"):
+        os.environ["CHAINLIT_DATA_LAYER"] = "sqlalchemy"
+        print(
+            "[DB] sqlite URL detected. Defaulting CHAINLIT_DATA_LAYER to 'sqlalchemy' to "
+            "use Chainlit's SQLAlchemy data layer."
+        )
+
+
+ensure_database_defaults()
 
 # ---日付の取得 ---
 from datetime import datetime
@@ -126,18 +161,6 @@ OPENAI_ALL_TOOLS = [
 ]
 
 # --- Chainlit App Logic ---
-@cl.on_chat_start
-async def start():
-    html = """
-    <style>
-      /* 背景を透過寄りにしたい場合に調整。不要なら削除可 */
-      body { background: transparent !important; }
-    </style>
-    <script src="/public/custom.js"></script>
-    """
-    await cl.Html(html)
-    await cl.Message(content="WebGL 背景を適用しました。").send()
-    
 async def open_code_workbench(
     code: Optional[str] = None,
     title: str = "Code Workbench",
@@ -160,6 +183,56 @@ async def open_code_workbench(
     element = cl.CustomElement(name="CodeWorkbench", props=props, display="inline")
     await cl.ElementSidebar.set_title("Code Workbench")
     await cl.ElementSidebar.set_elements([element])
+
+
+@cl.password_auth_callback
+async def authenticate_user(username: str, password: str) -> Optional[User]:
+    """CHAINLIT_USERNAME/CHAINLIT_PASSWORD による簡易認証を提供する。"""
+
+    allowed_users = get_allowed_users()
+
+    if not allowed_users:
+        print("[Auth] 利用可能な認証ユーザーが設定されていません。認証をスキップします。")
+        return None
+
+    if verify_credentials(username, password, allowed_users):
+        print(f"[Auth] ユーザー '{username}' が認証に成功しました。")
+        metadata = {
+            "role": "default",
+            "email": username,
+            "displayName": username,
+        }
+        return User(identifier=username, metadata=metadata)
+
+    print(f"[Auth] ユーザー '{username}' の認証に失敗しました。")
+    return None
+
+
+@cl.on_chat_resume
+async def on_chat_resume(thread: ThreadDict):
+    """保存されたスレッドからLangChain互換の履歴を復元する。"""
+
+    restored_history = []
+    for message in thread.get("messages", []):
+        author = message.get("author")
+        # Message contentは部分的に分割されるためテキスト部分のみ抽出
+        text_chunks = []
+        for chunk in message.get("content", []):
+            if isinstance(chunk, dict) and chunk.get("type") == "text":
+                text_chunks.append(chunk.get("text", ""))
+        content = "".join(text_chunks).strip()
+
+        if not content:
+            continue
+
+        if author == "user":
+            restored_history.append(HumanMessage(content=content))
+        elif author == "assistant":
+            restored_history.append(AIMessage(content=content))
+
+    cl.user_session.set("conversation_history", restored_history)
+    cl.user_session.set("chat_resumed", True)
+    print(f"[Resume] {len(restored_history)} 件の履歴を復元しました。")
 
 
 async def open_slide_preview(slides_json: str, title: str = "Slide Preview"):
@@ -343,6 +416,16 @@ def extract_js_code(text: str) -> Optional[str]:
 
 @cl.on_chat_start
 async def start_chat():
+    html = """
+    <style>
+      /* 背景を透過寄りにしたい場合に調整。不要なら削除可 */
+      body { background: transparent !important; }
+    </style>
+    <script src="/public/custom.js"></script>
+    """
+    await cl.Html(html)
+    await cl.Message(content="WebGL 背景を適用しました。").send()
+
     """チャット開始時に呼び出され、設定UIを初期化します。"""
     # Toolsトグルの初期状態をセッションに保存（デフォルト: OFF）
     tools_enabled = cl.user_session.get("tools_enabled")
@@ -385,7 +468,9 @@ async def start_chat():
     
     cl.user_session.set("model", initial_model)
     cl.user_session.set("system_prompt", initial_prompt)
-    cl.user_session.set("conversation_history", [])
+    if not cl.user_session.get("chat_resumed"):
+        cl.user_session.set("conversation_history", [])
+    cl.user_session.set("chat_resumed", False)
     
     print(f"Initial setup: Model={initial_model['label']}, Prompt={SYSTEM_PROMPT_CHOICES[DEFAULT_PROMPT_INDEX]['label']}")
     
