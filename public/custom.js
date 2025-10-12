@@ -6,6 +6,7 @@
   let threePromise = null;
   let activeBackground = null;
   let ensureScheduled = false;
+  let heartbeatId = null;
 
   function loadThree() {
     if (window.THREE) {
@@ -62,6 +63,13 @@
     // ---- renderer / scene
     const canvas = document.createElement("canvas");
     canvas.id = "space-bg";
+    canvas.setAttribute("data-space-bg", "");
+    canvas.style.position = "fixed";
+    canvas.style.inset = "0";
+    canvas.style.width = "100vw";
+    canvas.style.height = "100vh";
+    canvas.style.pointerEvents = "none";
+    canvas.style.zIndex = "-1";
     document.body.appendChild(canvas);
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -251,6 +259,17 @@
     return { canvas, cleanup };
   }
 
+  function ensureTransparentBackground() {
+    const targets = [document.documentElement, document.body, document.getElementById("root")];
+    targets.forEach((el) => {
+      if (!el) {
+        return;
+      }
+      el.style.background = "transparent";
+      el.style.backgroundColor = "transparent";
+    });
+  }
+
   function ensureBackground() {
     if (document.readyState === "loading") {
       return;
@@ -259,8 +278,10 @@
     loadThree()
       .then((THREE) => {
         if (activeBackground && activeBackground.canvas && activeBackground.canvas.isConnected) {
+          ensureTransparentBackground();
           return;
         }
+        ensureTransparentBackground();
         activeBackground = initBackground(THREE);
       })
       .catch(() => {
@@ -287,11 +308,27 @@
       const canvas = document.getElementById("space-bg");
       if (!canvas || !canvas.isConnected) {
         destroyActiveBackground();
-        scheduleEnsure();
       }
+      scheduleEnsure();
     });
     const target = document.documentElement || document;
     observer.observe(target, { childList: true, subtree: true });
+  }
+
+  function startHeartbeat() {
+    if (heartbeatId !== null) {
+      return;
+    }
+    heartbeatId = window.setInterval(() => {
+      const canvas = document.getElementById("space-bg");
+      const ready = canvas && canvas.isConnected;
+      if (!ready) {
+        destroyActiveBackground();
+        ensureBackground();
+      } else {
+        ensureTransparentBackground();
+      }
+    }, 2000);
   }
 
   function onReady(fn) {
@@ -305,6 +342,7 @@
   onReady(() => {
     ensureBackground();
     watchDom();
+    startHeartbeat();
   });
 })();
   
