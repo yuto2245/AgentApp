@@ -6,8 +6,6 @@ import time
 import base64
 import chainlit as cl
 from chainlit.input_widget import Select, Switch
-from chainlit.user import User
-from chainlit.types import ThreadDict
 from typing import Optional
 
 
@@ -162,52 +160,6 @@ async def open_code_workbench(
     element = cl.CustomElement(name="CodeWorkbench", props=props, display="inline")
     await cl.ElementSidebar.set_title("Code Workbench")
     await cl.ElementSidebar.set_elements([element])
-
-
-@cl.password_auth_callback
-async def authenticate_user(username: str, password: str) -> Optional[User]:
-    """CHAINLIT_USERNAME/CHAINLIT_PASSWORD による簡易認証を提供する。"""
-
-    expected_username = os.getenv("CHAINLIT_USERNAME")
-    expected_password = os.getenv("CHAINLIT_PASSWORD")
-
-    if not expected_username or not expected_password:
-        print("[Auth] CHAINLIT_USERNAME または CHAINLIT_PASSWORD が設定されていません。認証をスキップします。")
-        return None
-
-    if username == expected_username and password == expected_password:
-        print(f"[Auth] ユーザー '{username}' が認証に成功しました。")
-        return User(identifier=username, metadata={"role": "default"})
-
-    print(f"[Auth] ユーザー '{username}' の認証に失敗しました。")
-    return None
-
-
-@cl.on_chat_resume
-async def on_chat_resume(thread: ThreadDict):
-    """保存されたスレッドからLangChain互換の履歴を復元する。"""
-
-    restored_history = []
-    for message in thread.get("messages", []):
-        author = message.get("author")
-        # Message contentは部分的に分割されるためテキスト部分のみ抽出
-        text_chunks = []
-        for chunk in message.get("content", []):
-            if isinstance(chunk, dict) and chunk.get("type") == "text":
-                text_chunks.append(chunk.get("text", ""))
-        content = "".join(text_chunks).strip()
-
-        if not content:
-            continue
-
-        if author == "user":
-            restored_history.append(HumanMessage(content=content))
-        elif author == "assistant":
-            restored_history.append(AIMessage(content=content))
-
-    cl.user_session.set("conversation_history", restored_history)
-    cl.user_session.set("chat_resumed", True)
-    print(f"[Resume] {len(restored_history)} 件の履歴を復元しました。")
 
 
 async def open_slide_preview(slides_json: str, title: str = "Slide Preview"):
@@ -433,9 +385,7 @@ async def start_chat():
     
     cl.user_session.set("model", initial_model)
     cl.user_session.set("system_prompt", initial_prompt)
-    if not cl.user_session.get("chat_resumed"):
-        cl.user_session.set("conversation_history", [])
-    cl.user_session.set("chat_resumed", False)
+    cl.user_session.set("conversation_history", [])
     
     print(f"Initial setup: Model={initial_model['label']}, Prompt={SYSTEM_PROMPT_CHOICES[DEFAULT_PROMPT_INDEX]['label']}")
     
