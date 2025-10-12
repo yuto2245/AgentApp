@@ -1,7 +1,6 @@
 [project]
 # List of environment variables to be provided by each user to use the app.
 user_env = []
-# Password認証は環境変数 CHAINLIT_USERNAME / CHAINLIT_PASSWORD に設定した値を使用します。
 
 # Duration (in seconds) during which the session is saved when the connection is lost
 session_timeout = 3600
