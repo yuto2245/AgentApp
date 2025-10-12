@@ -3,10 +3,15 @@
   const THREE_URL = "https://unpkg.com/three@0.160.0/build/three.min.js";
   const THREE_SCRIPT_ID = "space-bg-threejs";
 
+  const STYLE_ID = "space-bg-style";
+  const SHELL_ID = "space-shell";
+  const SIDEBAR_ID = "space-sidebar";
+
   let threePromise = null;
   let activeBackground = null;
   let ensureScheduled = false;
   let heartbeatId = null;
+  let layoutListenerAttached = false;
 
   function loadThree() {
     if (window.THREE) {
@@ -270,6 +275,199 @@
     });
   }
 
+  function injectStyles() {
+    if (document.getElementById(STYLE_ID)) {
+      return;
+    }
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = `
+      :root, body, #root {
+        background: transparent !important;
+        color: #f5f7fb;
+      }
+      body {
+        font-family: "Inter", "Noto Sans JP", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      #${SHELL_ID} {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: stretch;
+        justify-content: flex-start;
+        pointer-events: none;
+        z-index: 6;
+      }
+      #${SIDEBAR_ID} {
+        pointer-events: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        width: min(320px, 28vw);
+        max-width: 360px;
+        margin: 72px 0 32px 24px;
+        padding: 24px;
+        border-radius: 18px;
+        background: linear-gradient(160deg, rgba(20,22,30,0.82), rgba(24,26,34,0.65));
+        backdrop-filter: blur(14px);
+        border: 1px solid rgba(88,120,255,0.25);
+        box-shadow: 0 32px 60px rgba(0,0,0,0.45);
+      }
+      #${SIDEBAR_ID} h2 {
+        font-size: 1.25rem;
+        margin: 0;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #a8c6ff;
+      }
+      #${SIDEBAR_ID} p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: rgba(229,235,255,0.72);
+        line-height: 1.5;
+      }
+      #${SIDEBAR_ID} .sidebar-divider {
+        height: 1px;
+        background: linear-gradient(90deg, rgba(88,120,255,0.15), rgba(88,120,255,0));
+        border: none;
+      }
+      #${SIDEBAR_ID} .sidebar-links {
+        display: grid;
+        gap: 10px;
+      }
+      #${SIDEBAR_ID} .sidebar-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.03);
+        color: inherit;
+        text-decoration: none;
+        transition: background 0.2s ease, transform 0.2s ease;
+      }
+      #${SIDEBAR_ID} .sidebar-link:hover {
+        background: rgba(105, 143, 255, 0.18);
+        transform: translateY(-1px);
+      }
+      #${SIDEBAR_ID} .sidebar-link span {
+        font-size: 0.85rem;
+      }
+      #${SIDEBAR_ID} .sidebar-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        color: rgba(173,198,255,0.95);
+        border-radius: 999px;
+        background: rgba(88,120,255,0.18);
+      }
+      #${SIDEBAR_ID} .sidebar-footer {
+        font-size: 0.72rem;
+        color: rgba(211,219,255,0.55);
+      }
+      @media (max-width: 1023px) {
+        #${SIDEBAR_ID} {
+          position: fixed;
+          inset: auto 16px 16px 16px;
+          width: auto;
+          margin: 0;
+          padding: 20px;
+          z-index: 8;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function ensureSidebar() {
+    if (!document.body) {
+      return;
+    }
+
+    injectStyles();
+
+    let shell = document.getElementById(SHELL_ID);
+    if (!shell) {
+      shell = document.createElement("div");
+      shell.id = SHELL_ID;
+      shell.setAttribute("data-space-shell", "");
+      document.body.appendChild(shell);
+    } else if (!shell.isConnected) {
+      document.body.appendChild(shell);
+    }
+
+    let sidebar = document.getElementById(SIDEBAR_ID);
+    if (!sidebar) {
+      sidebar = document.createElement("aside");
+      sidebar.id = SIDEBAR_ID;
+      sidebar.innerHTML = `
+        <div class="sidebar-tag">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.53 4.35a1 1 0 0 1 .47.86v8.58a1 1 0 0 1-.47.86L12 21l-7.53-4.35a1 1 0 0 1-.47-.86V8.21a1 1 0 0 1 .47-.86L12 3z"/><path d="M12 12l7.5-4.35"/><path d="M12 12v9"/><path d="M12 12L4.5 7.65"/></svg>
+          SPACE OPS
+        </div>
+        <h2>Agent Mission Brief</h2>
+        <p>
+          認証後も背景と補助UIを維持するための実験的なサイドバーです。操作チュートリアルや外部リンクをここに集約できます。
+        </p>
+        <hr class="sidebar-divider" />
+        <div class="sidebar-links">
+          <a class="sidebar-link" href="https://github.com/yuto2245/AgentApp" target="_blank" rel="noreferrer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 2.64 1.78 4.87 4.19 5.72-.27.23-.44.57-.44.95v2.33"/><path d="M9.75 18c-2.33.5-4.35-.8-4.35-3.5"/><path d="M15.44 13.72C17.85 12.87 19.63 10.64 19.63 8"/><path d="M14.25 18v-2.33c0-.38-.17-.72-.44-.95"/></svg>
+            <span>Repository</span>
+          </a>
+          <a class="sidebar-link" href="https://docs.chainlit.io" target="_blank" rel="noreferrer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10a2 2 0 0 1 2 2v14l-7-3-7 3V5a2 2 0 0 1 2-2z"/></svg>
+            <span>Chainlit Docs</span>
+          </a>
+          <a class="sidebar-link" href="https://threejs.org" target="_blank" rel="noreferrer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9.5 5.5v11L12 21l-9.5-5.5v-11L12 3z"/><path d="M12 3v18"/></svg>
+            <span>Three.js</span>
+          </a>
+        </div>
+        <hr class="sidebar-divider" />
+        <div class="sidebar-footer">
+          UIレイアウトはJavaScriptから直接注入されており、ChainlitのDOMが再構築されても自動的に復元されます。
+        </div>
+      `;
+      shell.appendChild(sidebar);
+    } else if (!sidebar.isConnected) {
+      shell.appendChild(sidebar);
+    }
+
+    shell.style.pointerEvents = "none";
+    if (sidebar) {
+      sidebar.style.pointerEvents = "auto";
+    }
+  }
+
+  function layoutRoot() {
+    const root = document.getElementById("root");
+    if (!root) {
+      return;
+    }
+    const width = window.innerWidth || 0;
+    const offset = width >= 1440 ? 380 : width >= 1280 ? 340 : width >= 1120 ? 300 : width >= 960 ? 260 : 0;
+    root.style.transition = root.style.transition || "padding 0.3s ease";
+    root.style.paddingLeft = offset ? `${offset}px` : "";
+    root.style.paddingRight = width >= 960 ? "40px" : "";
+  }
+
+  function ensureLayoutListener() {
+    if (layoutListenerAttached) {
+      return;
+    }
+    layoutListenerAttached = true;
+    window.addEventListener("resize", layoutRoot, { passive: true });
+  }
+
+  function ensureCustomUI() {
+    ensureSidebar();
+    ensureLayoutListener();
+    layoutRoot();
+  }
+
   function ensureBackground() {
     if (document.readyState === "loading") {
       return;
@@ -277,6 +475,7 @@
 
     loadThree()
       .then((THREE) => {
+        ensureCustomUI();
         if (activeBackground && activeBackground.canvas && activeBackground.canvas.isConnected) {
           ensureTransparentBackground();
           return;
@@ -309,6 +508,7 @@
       if (!canvas || !canvas.isConnected) {
         destroyActiveBackground();
       }
+      ensureCustomUI();
       scheduleEnsure();
     });
     const target = document.documentElement || document;
@@ -327,6 +527,7 @@
         ensureBackground();
       } else {
         ensureTransparentBackground();
+        ensureCustomUI();
       }
     }, 2000);
   }
@@ -340,6 +541,7 @@
   }
 
   onReady(() => {
+    ensureCustomUI();
     ensureBackground();
     watchDom();
     startHeartbeat();
