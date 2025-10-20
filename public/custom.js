@@ -1,3 +1,41 @@
+// ログイン画面に新規登録リンクを追加
+(function addSignupLink() {
+  function inject() {
+    if (!/login/i.test(window.location.pathname)) {
+      return;
+    }
+    if (document.querySelector('form .signup-hint')) {
+      return;
+    }
+    const usernameInput = document.querySelector('input[name="username"], input[type="email"]');
+    if (!usernameInput) {
+      return;
+    }
+    const form = usernameInput.closest('form');
+    if (!form) {
+      return;
+    }
+    const hint = document.createElement('p');
+    hint.className = 'signup-hint';
+    const link = document.createElement('a');
+    link.href = '/public/register.html';
+    link.textContent = 'アカウントをお持ちでない方はこちらから登録';
+    hint.appendChild(link);
+    form.appendChild(hint);
+  }
+
+  const init = () => {
+    inject();
+    setTimeout(inject, 200);
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
 // 黒宇宙: 星層(遠/中/近) + 低彩度ネビュラ + 微弱瞬き。ビーム無し。
 (function () {
     const s = document.createElement("script");

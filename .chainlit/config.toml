@@ -14,6 +14,9 @@ cache = false
 # Authorized origins
 allow_origins = ["*"]
 
+# Persist chat data (threads, steps, elements) in the configured data layer.
+data_persistence = true
+
 [features]
 # Process and display HTML in messages. This can be a security risk (see https://stackoverflow.com/questions/19603097/why-is-it-dangerous-to-render-user-generated-html-or-javascript)
 unsafe_allow_html = false
@@ -25,10 +28,13 @@ latex = false
 user_message_autoscroll = true
 
 # Automatically tag threads with the current chat profile (if a chat profile is used)
-auto_tag_thread = true
+auto_tag_thread = false
 
 # Allow users to edit their own messages
 edit_message = true
+
+# Enable built-in chat history UI backed by the data layer.
+chat_history = true
 
 [features.slack]
 # Add emoji reaction when message is received (requires reactions:write OAuth scope)

@@ -4,9 +4,26 @@ import json
 import asyncio
 import time
 import base64
+from pathlib import Path
 import chainlit as cl
 from chainlit.input_widget import Select, Switch
-from typing import Optional
+from chainlit.types import ThreadDict
+from typing import Optional, Dict, Any, List
+
+from chainlit.user import User
+
+from data_layer import AppDataLayer
+from auth import (
+    authenticate_email_password,
+    create_app_user,
+    is_password_valid,
+    normalize_email,
+    sanitize_role,
+)
+from chainlit.server import app as chainlit_server_app
+from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
+from pydantic import BaseModel, constr, validator
 
 
 # --- Provider SDKs ---
@@ -35,6 +52,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 XAI_API_KEY = os.getenv("XAI_API_KEY")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 # クライアントはグローバルに初期化しておくと効率的
 openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
@@ -45,6 +63,271 @@ gemini_client = genai.Client(api_key=GOOGLE_API_KEY) if GOOGLE_API_KEY else None
 
 # Chainlitのトレース機能
 cl.instrument_openai()
+
+# --- Authentication & Persistence ---
+def _normalize_database_url(raw_url: Optional[str]) -> str:
+    """Herokuなどの`postgres://`形式をasyncpg互換に揃える。"""
+    if not raw_url:
+        raise RuntimeError("DATABASE_URL is not set. Configure your Postgres connection string.")
+    if raw_url.startswith("postgres://"):
+        return raw_url.replace("postgres://", "postgresql://", 1)
+    return raw_url
+
+
+_DATA_LAYER: Optional[AppDataLayer] = None
+
+
+def _get_data_layer() -> AppDataLayer:
+    """データレイヤーをシングルトン的に生成・共有するヘルパー。"""
+    global _DATA_LAYER
+    if _DATA_LAYER is None:
+        normalized_url = _normalize_database_url(DATABASE_URL)
+        _DATA_LAYER = AppDataLayer(database_url=normalized_url)
+    return _DATA_LAYER
+
+
+def _model_index_by_label(label: Optional[str]) -> int:
+    if not label:
+        return DEFAULT_MODEL_INDEX
+    for idx, model in enumerate(AVAILABLE_MODELS):
+        if model.get("label") == label:
+            return idx
+    return DEFAULT_MODEL_INDEX
+
+
+def _prompt_index_by_label(label: Optional[str]) -> int:
+    if not label:
+        return DEFAULT_PROMPT_INDEX
+    for idx, prompt in enumerate(SYSTEM_PROMPT_CHOICES):
+        if prompt.get("label") == label:
+            return idx
+    return DEFAULT_PROMPT_INDEX
+
+
+def _prompt_label_from_content(content: Optional[str]) -> Optional[str]:
+    if not content:
+        return None
+    for prompt in SYSTEM_PROMPT_CHOICES:
+        if prompt.get("content") == content:
+            return prompt.get("label")
+    return None
+
+
+def _normalize_display_text(text: str) -> str:
+    if not text:
+        return ""
+    normalized = (
+        text.replace("\\r\\n", "\n")
+        .replace("\\n", "\n")
+        .replace("\\r", "\n")
+        .replace("\\t", "\t")
+    )
+    return normalized
+
+
+def _extract_text_from_payload(payload: Any) -> str:
+    if payload is None:
+        return ""
+    if isinstance(payload, dict):
+        for key in ("text", "message", "content", "value", "prompt"):
+            value = payload.get(key)
+            if isinstance(value, str) and value.strip():
+                return _normalize_display_text(value)
+            if isinstance(value, (dict, list)):
+                nested = _extract_text_from_payload(value)
+                if nested:
+                    return nested
+        for value in payload.values():
+            if isinstance(value, str) and value.strip():
+                return _normalize_display_text(value)
+            if isinstance(value, (dict, list)):
+                nested = _extract_text_from_payload(value)
+                if nested:
+                    return nested
+        return ""
+    if isinstance(payload, list):
+        for item in payload:
+            nested = _extract_text_from_payload(item)
+            if nested:
+                return nested
+        return ""
+    if isinstance(payload, str):
+        text = payload.strip()
+        if not text:
+            return ""
+        try:
+            data = json.loads(text)
+            return _extract_text_from_payload(data)
+        except Exception:
+            return _normalize_display_text(text)
+    return _normalize_display_text(str(payload))
+
+
+def _rebuild_conversation_history(thread: ThreadDict) -> List[HumanMessage | AIMessage]:
+    history: List[HumanMessage | AIMessage] = []
+    steps = thread.get("steps") or []
+    sorted_steps = sorted(
+        steps,
+        key=lambda step: step.get("createdAt") or "",
+    )
+    for step in sorted_steps:
+        step_type = step.get("type")
+        if step_type in ("assistant_message",):
+            text = _extract_text_from_payload(step.get("output") or step.get("input"))
+            if text:
+                history.append(AIMessage(content=text))
+        elif step_type in ("user_message", "run"):
+            text = _extract_text_from_payload(step.get("input") or step.get("output"))
+            if text:
+                history.append(HumanMessage(content=text))
+    return history
+
+
+async def _send_chat_settings(
+    initial_model_index: int,
+    initial_prompt_index: int,
+    tools_enabled: bool,
+):
+    return await cl.ChatSettings([
+        Select(
+            id="model",
+            label="モデル",
+            values=[m["label"] for m in AVAILABLE_MODELS],
+            initial_index=initial_model_index,
+        ),
+        Select(
+            id="system_prompt",
+            label="システムプロンプト（AIの性格・役割）",
+            values=[p["label"] for p in SYSTEM_PROMPT_CHOICES],
+            initial_index=initial_prompt_index,
+        ),
+        Switch(
+            id="tools_enabled",
+            label="Tools（Web検索/実行/MCP）",
+            initial=tools_enabled,
+        ),
+    ]).send()
+
+
+async def _persist_thread_metadata() -> None:
+    try:
+        thread_id = getattr(cl.context.session, "thread_id", None)
+    except Exception:
+        return
+
+    if not thread_id:
+        return
+
+    try:
+        model_info = cl.user_session.get("model")
+        system_prompt = cl.user_session.get("system_prompt")
+        tools_enabled = bool(cl.user_session.get("tools_enabled", False))
+    except Exception:
+        return
+
+    data_layer = _get_data_layer()
+
+    model_label = model_info.get("label") if isinstance(model_info, dict) else None
+    prompt_label = _prompt_label_from_content(system_prompt if isinstance(system_prompt, str) else None)
+
+    metadata: Dict[str, Any] = {
+        "settings": {
+            "model_label": model_label,
+            "system_prompt_label": prompt_label,
+            "tools_enabled": tools_enabled,
+        }
+    }
+
+    try:
+        await data_layer.update_thread(thread_id=thread_id, metadata=metadata)
+    except Exception as exc:
+        print(f"Failed to persist thread metadata: {exc}")
+
+
+REGISTER_HTML_PATH = Path(__file__).parent / "public" / "register.html"
+
+
+class RegisterRequest(BaseModel):
+    email: constr(min_length=5, strip_whitespace=True)
+    password: constr(min_length=8)
+    display_name: constr(min_length=1, strip_whitespace=True)
+    role: Optional[str] = None
+
+    @validator("email")
+    def validate_email(cls, value: str) -> str:
+        email = normalize_email(value or "")
+        if not email:
+            raise ValueError("有効なメールアドレスを入力してください。")
+        return email
+
+
+class RegisterResponse(BaseModel):
+    id: str
+    email: str
+    display_name: str
+    role: str
+
+
+router = APIRouter(prefix="/api")
+
+
+@router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
+async def register_user(payload: RegisterRequest):
+    data_layer = _get_data_layer()
+    await data_layer.connect()
+
+    email = payload.email
+    display_name = payload.display_name.strip()
+    role = sanitize_role(payload.role)
+
+    if not is_password_valid(payload.password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="パスワードは8文字以上で入力してください。")
+
+    async with data_layer.pool.acquire() as connection:  # type: ignore[attr-defined]
+        existing = await connection.fetchval('SELECT 1 FROM "AppUser" WHERE email = $1', email)
+        if existing:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="このメールアドレスは既に登録されています。")
+
+        row = await create_app_user(
+            connection,
+            email=email,
+            password=payload.password,
+            display_name=display_name,
+            role=role,
+        )
+
+    return RegisterResponse(
+        id=str(row["id"]),
+        email=row["email"],
+        display_name=row["display_name"],
+        role=row["role"],
+    )
+
+
+@chainlit_server_app.get("/register")
+async def register_page():
+    if not REGISTER_HTML_PATH.exists():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="登録ページが存在しません")
+    return RedirectResponse(url="/public/register.html")
+
+
+chainlit_server_app.include_router(router)
+
+
+@cl.password_auth_callback
+async def password_auth(username: str, password: str) -> Optional[User]:
+    """アプリ側のユーザーテーブルで認証し、Chainlit に返す。"""
+    data_layer = _get_data_layer()
+    user = await authenticate_email_password(username, password, data_layer)
+    if user:
+        return user
+    return None
+
+
+@cl.data_layer
+def configure_data_layer() -> AppDataLayer:
+    """Chainlit に利用させるデータレイヤーを返す。"""
+    return _get_data_layer()
 
 # --- モデルリストの定義 ---
 AVAILABLE_MODELS = [
@@ -373,11 +656,11 @@ async def start_chat():
                 break
     
     # 設定UI（モデルは設定パネルで切替。プロフィールはプロンプトのみ反映）
-    settings = await cl.ChatSettings([
-        Select(id="model", label="モデル", values=[m["label"] for m in AVAILABLE_MODELS], initial_index=initial_model_index),
-        Select(id="system_prompt", label="システムプロンプト（AIの性格・役割）", values=[p["label"] for p in SYSTEM_PROMPT_CHOICES], initial_index=initial_prompt_index),
-        Switch(id="tools_enabled", label="Tools（Web検索/実行/MCP）", initial=tools_enabled),
-    ]).send()
+    settings = await _send_chat_settings(
+        initial_model_index=initial_model_index,
+        initial_prompt_index=initial_prompt_index,
+        tools_enabled=tools_enabled,
+    )
     
     # 初期設定を設定（UIの初期値に合わせる）
     initial_model = AVAILABLE_MODELS[DEFAULT_MODEL_INDEX]
@@ -390,6 +673,55 @@ async def start_chat():
     print(f"Initial setup: Model={initial_model['label']}, Prompt={SYSTEM_PROMPT_CHOICES[DEFAULT_PROMPT_INDEX]['label']}")
     
     await setup_agent(settings)
+
+
+@cl.on_chat_resume
+async def resume_chat(thread: ThreadDict):
+    """既存スレッドを再開する際にセッション状態を復元する。"""
+    metadata = thread.get("metadata") or {}
+    if not isinstance(metadata, dict):
+        metadata = {}
+
+    stored_settings = metadata.get("settings")
+    if not isinstance(stored_settings, dict):
+        stored_settings = {}
+
+    model_label = stored_settings.get("model_label")
+    prompt_label = stored_settings.get("system_prompt_label")
+    tools_enabled = bool(stored_settings.get("tools_enabled", False))
+
+    model_index = _model_index_by_label(model_label)
+    prompt_index = _prompt_index_by_label(prompt_label)
+    selected_model = AVAILABLE_MODELS[model_index]
+    selected_prompt = SYSTEM_PROMPT_CHOICES[prompt_index]["content"]
+
+    cl.user_session.set("model", selected_model)
+    cl.user_session.set("system_prompt", selected_prompt)
+    cl.user_session.set("tools_enabled", tools_enabled)
+    cl.user_session.set("conversation_history", _rebuild_conversation_history(thread))
+    cl.user_session.set("previous_response_id", None)
+
+    try:
+        await cl.context.emitter.set_commands(COMMANDS_BASE)
+    except Exception as e:
+        print(f"Failed to set commands on resume: {e}")
+
+    settings = await _send_chat_settings(
+        initial_model_index=model_index,
+        initial_prompt_index=prompt_index,
+        tools_enabled=tools_enabled,
+    )
+
+    if settings:
+        await setup_agent(settings)
+    else:
+        await setup_agent(
+            {
+                "model": selected_model["label"],
+                "system_prompt": SYSTEM_PROMPT_CHOICES[prompt_index]["label"],
+                "tools_enabled": tools_enabled,
+            }
+        )
 
 @cl.on_settings_update
 async def setup_agent(settings: dict):
@@ -414,6 +746,8 @@ async def setup_agent(settings: dict):
             print(f"Failed to update commands on settings change: {e}")
 
     print(f"Settings updated: Model={selected_model['label']}, Prompt={prompt_label}")
+
+    await _persist_thread_metadata()
 
 @cl.on_message
 async def on_message(message: cl.Message):
@@ -508,7 +842,10 @@ async def on_message(message: cl.Message):
                 return
 
             async with cl.Step(name="スライド生成中...") as step:
-                step.input = message.content
+                step.input = json.dumps({
+                    "prompt": message.content,
+                    "model": "gpt-4o",
+                })
                 # braces を含むテンプレ内で format() を使うと例外になるため、手動置換にする
                 prompt = SLIDE_GENERATION_PROMPT_TEMPLATE.replace("{user_input}", message.content)
                 
@@ -522,7 +859,7 @@ async def on_message(message: cl.Message):
                         max_tokens=4000,
                     )
                     slide_json_str = response.choices[0].message.content
-                    step.output = slide_json_str
+                    step.output = json.dumps({"raw": slide_json_str})
                     
                     extracted_json = extract_json_array(slide_json_str)
                     
@@ -596,7 +933,15 @@ async def on_message(message: cl.Message):
 
             tools = OPENAI_ALL_TOOLS if cl.user_session.get("tools_enabled", False) else []
             async with cl.Step(name="応答生成中...") as step:
-                step.input = message.content
+                step.input = json.dumps({
+                    "prompt": message.content,
+                    "model": model_info["value"],
+                    "provider": model_info["type"],
+                })
+                step.metadata = {
+                    "model": model_info["value"],
+                    "provider": model_info["type"],
+                }
                 response = openai_client.responses.create(
                     model=model,
                     input=[
@@ -690,16 +1035,18 @@ async def on_message(message: cl.Message):
                         # print("DEBUG OpenAI event:", event)
                         pass
 
-                # Step の出力を設定（最終テキスト）
-                try:
-                    step.output = answer_text
-                except Exception:
-                    pass
-        
             #正常終了後、会話履歴を更新
             if answer_text:
                 conversation_history.append(AIMessage(content=answer_text))
                 cl.user_session.set("conversation_history", conversation_history)
+                try:
+                    step.output = answer_text
+                    step.metadata = {
+                        "model": model_info["value"],
+                        "provider": model_info["type"],
+                    }
+                except Exception:
+                    pass
             await msg.update()
 
         # --- Gemini Models ---

@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AgentApp | 新規アカウント登録</title>
+    <link rel="stylesheet" href="/public/custom.css" />
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        font-family: "Inter", "Noto Sans JP", system-ui, sans-serif;
+        background: #05060a;
+        color: #f8f9ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 24px;
+      }
+      .card {
+        width: min(420px, 100%);
+        padding: 32px 28px;
+        background: rgba(17, 19, 33, 0.9);
+        border-radius: 18px;
+        box-shadow: 0 20px 60px rgba(12, 16, 32, 0.45);
+        border: 1px solid rgba(88, 100, 255, 0.25);
+        backdrop-filter: blur(12px);
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.6rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+      p.subtitle {
+        margin: 0 0 24px;
+        color: rgba(219, 224, 255, 0.75);
+        font-size: 0.95rem;
+      }
+      label {
+        display: block;
+        font-size: 0.85rem;
+        margin-bottom: 6px;
+        color: rgba(219, 224, 255, 0.9);
+      }
+      input {
+        width: 100%;
+        padding: 12px 14px;
+        background: rgba(10, 12, 24, 0.9);
+        border: 1px solid rgba(88, 100, 255, 0.3);
+        border-radius: 10px;
+        color: #f1f5ff;
+        font-size: 0.95rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+      input:focus {
+        outline: none;
+        border-color: #7f8cff;
+        box-shadow: 0 0 0 1px rgba(127, 140, 255, 0.4);
+      }
+      button {
+        width: 100%;
+        margin-top: 20px;
+        padding: 12px 18px;
+        background: linear-gradient(130deg, #7c5cff, #5b8dff);
+        border: none;
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+      button:not(:disabled):hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 35px rgba(124, 92, 255, 0.35);
+      }
+      .status {
+        margin-top: 18px;
+        font-size: 0.92rem;
+      }
+      .status.success {
+        color: #7be7a4;
+      }
+      .status.error {
+        color: #ff8fa3;
+      }
+      .links {
+        margin-top: 24px;
+        text-align: center;
+        font-size: 0.9rem;
+      }
+      .links a {
+        color: #9fb7ff;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>アカウント登録</h1>
+      <p class="subtitle">AgentApp のご利用に必要なログイン情報を作成します。</p>
+      <form id="register-form">
+        <label for="email">メールアドレス</label>
+        <input id="email" name="email" type="email" autocomplete="email" required />
+
+        <label for="display_name">表示名</label>
+        <input id="display_name" name="display_name" type="text" autocomplete="name" required />
+
+        <label for="password">パスワード（8文字以上）</label>
+        <input id="password" name="password" type="password" minlength="8" autocomplete="new-password" required />
+
+        <button type="submit">登録する</button>
+        <p id="status" class="status" aria-live="polite"></p>
+      </form>
+      <div class="links">
+        <a href="/login">既にアカウントをお持ちの方はログイン</a>
+      </div>
+    </main>
+
+    <script>
+      const form = document.getElementById('register-form');
+      const statusEl = document.getElementById('status');
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        statusEl.textContent = '';
+        statusEl.className = 'status';
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+
+        const payload = {
+          email: form.email.value,
+          display_name: form.display_name.value,
+          password: form.password.value,
+        };
+
+        try {
+          const res = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await res.json().catch(() => ({}));
+
+          if (!res.ok) {
+            const message = data?.detail || '登録に失敗しました。入力内容をご確認ください。';
+            throw new Error(message);
+          }
+
+          statusEl.textContent = '登録が完了しました。ログイン画面へ戻ってください。';
+          statusEl.classList.add('success');
+          form.reset();
+        } catch (error) {
+          statusEl.textContent = error?.message || '登録処理中にエラーが発生しました。';
+          statusEl.classList.add('error');
+        } finally {
+          submitBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -8,4 +8,16 @@ html, body {
     : 100vw; height: 100vh; pointer-events: none;
   }
 
+  form .signup-hint {
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  form .signup-hint a {
+    color: #97b8ff;
+    text-decoration: underline;
+  }
+
   
