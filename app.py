@@ -244,7 +244,7 @@ async def _persist_thread_metadata() -> None:
         print(f"Failed to persist thread metadata: {exc}")
 
 
-REGISTER_HTML_PATH = Path(__file__).parent / "public" / "register.html"
+SIGNUP_HTML_PATH = Path(__file__).parent / "public" / "auth" / "signup.html"
 
 
 class RegisterRequest(BaseModel):
@@ -306,9 +306,15 @@ async def register_user(payload: RegisterRequest):
 
 @chainlit_server_app.get("/register")
 async def register_page():
-    if not REGISTER_HTML_PATH.exists():
+    if not SIGNUP_HTML_PATH.exists():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="登録ページが存在しません")
-    return RedirectResponse(url="/public/register.html")
+    return RedirectResponse(url="/public/auth/signup.html")
+
+
+@chainlit_server_app.get("/", include_in_schema=False)
+async def root_redirect():
+    """アプリ起動時に認証トップへ誘導する。"""
+    return RedirectResponse(url="/public/auth/index.html")
 
 
 chainlit_server_app.include_router(router)

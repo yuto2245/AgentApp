@@ -74,7 +74,7 @@ async def authenticate_email_password(
     # AppUser テーブルから対象ユーザーを取得（メールアドレスはユニーク想定）
     async with data_layer.pool.acquire() as connection:  # type: ignore[attr-defined]
         row: Optional[asyncpg.Record] = await connection.fetchrow(
-            """
+        """
             SELECT id, email, password_hash, display_name, role
             FROM "AppUser"
             WHERE email = $1
@@ -82,30 +82,13 @@ async def authenticate_email_password(
             email,
         )
 
-        # ユーザーが存在しない場合は登録として扱う
         if not row:
-            if not is_password_valid(password):
-                return None
-            try:
-                row = await create_app_user(
-                    connection,
-                    email=email,
-                    password=password,
-                )
-            except UniqueViolationError:
-                row = await connection.fetchrow(
-                    """
-                    SELECT id, email, password_hash, display_name, role
-                    FROM "AppUser"
-                    WHERE email = $1
-                    """,
-                    email,
-                )
+            return None
 
+    # ハッシュ化されたパスワードを bcrypt で照合
     if not row:
         return None
 
-    # ハッシュ化されたパスワードを bcrypt で照合
     password_hash = row["password_hash"]
     if not password_hash or not bcrypt.checkpw(
         password.encode("utf-8"), password_hash.encode("utf-8")

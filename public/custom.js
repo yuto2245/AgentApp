@@ -1,38 +1,49 @@
-// ログイン画面に新規登録リンクを追加
+// ログイン画面に新規登録リンクを追加（MutationObserverで描画完了を待つ）
 (function addSignupLink() {
-  function inject() {
-    if (!/login/i.test(window.location.pathname)) {
-      return;
-    }
-    if (document.querySelector('form .signup-hint')) {
-      return;
-    }
-    const usernameInput = document.querySelector('input[name="username"], input[type="email"]');
-    if (!usernameInput) {
-      return;
-    }
-    const form = usernameInput.closest('form');
-    if (!form) {
-      return;
-    }
-    const hint = document.createElement('p');
-    hint.className = 'signup-hint';
-    const link = document.createElement('a');
-    link.href = '/public/register.html';
-    link.textContent = 'アカウントをお持ちでない方はこちらから登録';
-    hint.appendChild(link);
-    form.appendChild(hint);
-  }
+  const LINK_CLASS = 'signup-hint';
+  const LINK_HREF = '/public/auth/signup.html';
+  const LINK_TEXT = 'アカウントをお持ちでない方はこちらから登録';
 
-  const init = () => {
-    inject();
-    setTimeout(inject, 200);
+  const inject = () => {
+    const forms = document.querySelectorAll('form');
+    for (const form of forms) {
+      const hasPasswordField = form.querySelector('input[type="password"]');
+      const hasSubmitButton = form.querySelector('button[type="submit"], input[type="submit"]');
+      if (!hasPasswordField || !hasSubmitButton) {
+        continue;
+      }
+      if (form.querySelector(`.${LINK_CLASS}`)) {
+        return true;
+      }
+      const hint = document.createElement('p');
+      hint.className = LINK_CLASS;
+      const link = document.createElement('a');
+      link.href = LINK_HREF;
+      link.textContent = LINK_TEXT;
+      hint.appendChild(link);
+      form.appendChild(hint);
+      return true;
+    }
+    return false;
   };
 
+  if (inject()) {
+    return;
+  }
+
+  const observer = new MutationObserver((mutations, obs) => {
+    if (inject()) {
+      obs.disconnect();
+    }
+  });
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', () => {
+      inject();
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
   } else {
-    init();
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 })();
 

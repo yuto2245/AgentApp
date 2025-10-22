@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signup</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=visibility,visibility_off" />
+    <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+</head>
+<body>
+  <!-- signup.html -->
+  <div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="card p-4 shadow rounded-4" style="width: 380px;">
+      <h4 class="text-center mb-3">アカウントを新規作成</h4>
+      <form id="signupForm" novalidate>
+        <label for="email" class="form-label small mb-1">メールアドレス</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          class="form-control"
+          placeholder="you@example.com"
+          autocomplete="email"
+          required
+          aria-describedby="emailError"
+        />
+        <div id="emailError" class="text-danger small mt-1" aria-live="polite"></div>
+
+        <label for="displayName" class="form-label small mt-3 mb-1">表示名</label>
+        <input
+          type="text"
+          id="displayName"
+          name="displayName"
+          class="form-control"
+          placeholder="表示名（任意）"
+          autocomplete="name"
+          aria-describedby="signupStatus"
+        />
+
+        <label for="password" class="form-label small mt-3 mb-1">パスワード</label>
+        <div class="input-group">
+          <input
+            type="password"
+            id="password"
+            name="password"
+            class="form-control"
+            placeholder="アルファベット・数字・記号を含む8文字以上"
+            autocomplete="new-password"
+            required
+            aria-describedby="passwordError"
+          />
+          <button
+            type="button"
+            id="passwordVisibilityButton"
+            class="btn btn-outline-secondary"
+            aria-label="パスワードの表示を切り替え"
+          >
+            <span class="material-symbols-outlined">visibility</span>
+          </button>
+        </div>
+        <div id="passwordError" class="text-danger small mt-1" aria-live="polite"></div>
+
+        <button type="submit" class="btn btn-success w-100 mt-4">登録する</button>
+      </form>
+      <p class="text-center mt-3 mb-0">
+        既にアカウントをお持ちですか?
+        <a href="/AgentApp/app.py">ログイン</a>
+      </p>
+      <p id="signupStatus" class="text-center small mt-3" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <!-- ✅ Bootstrap JS（動的コンポーネント用：モーダルなど） -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"
+  ></script>
+  <script src="auth.js" defer></script>
+</body>
+</html>

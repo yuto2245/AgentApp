@@ -1,11 +1,16 @@
 #現状
-AgentApp（ChainlitベースのPythonプロトタイプアプリ）の現状は、基本機能（LLM統合、シンプルUI）が実装済みですが、Procfile/テスト/CI/CD/ユーザー管理/DBが不足しています。
-なので、これらの機能を追加してデプロイすることが第一目標です。
+AgentApp（ChainlitベースのPythonプロトタイプアプリ）は、基本機能（LLM統合、シンプルUI）に加えて以下が完了しています。
+
+- PostgreSQLによるデータ永続化とユーザー認証の導入（`AppDataLayer`・`AppUser`）。
+- Procfile/runtime.txt整備とHerokuへのデプロイ（本番環境稼働中）。
+- GitHub Actionsによる最低限のCI/CDワークフロー（テスト実行とHerokuデプロイ連携）。
+
+一方で自動テストの網羅性やCI/CDワークフローの拡張、運用監視はまだ道半ばのため、これらを優先的に強化しています。
+ユーザー自身がコーディングを行えるよう、これらの補強を進めていきます。
 また、ユーザー自身は、前職でシステムエンジにでしたが開発案件に参画したことがないため、転職でこのアプリケーションをポートフォリオにしようとしています。
 
 #アプリケーションの今後
-DB機能の追加・デプロイ・GithubActionsでCI/CDの設定
-これらを行います。
+既存のGitHub Actionsワークフローを拡張しつつ、テストコード整備や運用監視の導入を進めます。
 
 #実装
 ・DB:PostageSQL
@@ -86,10 +91,10 @@ DB確認: heroku pg:psqlでSELECT * FROM steps;実行（会話データ確認）
 - `.chainlit/config.toml` の `data_persistence=true` と `chat_history=true` を有効化し、Chainlit標準UIによる履歴表示を利用。タグ自動付与によるエラーを避けるため `auto_tag_thread=false` を設定。
 - `requirements.txt` に `bcrypt` と `asyncpg` を追加して依存を明示。`schema_chainlit.sql` に沿って `AppUser` を含むDDLと権限設定を整理。
 - チャット履歴がJSONBに保存されるよう `AppDataLayer`（`data_layer.py`）を追加。`create_step`/`update_step` で `input`/`output` をJSON文字列に変換し、OpenAI応答時の `cl.Step` も `json.dumps` を通して保存するよう `app.py` を修正。これによりThread/Stepテーブルにユーザーと会話履歴が正常に紐づく。
-- `/register` エンドポイントと `/api/register` API を追加し、ユーザー自身がメール・表示名・パスワードを入力して `AppUser` に登録できるようにした。ログインフォームから新しいメールアドレスでサインインすると自動的にユーザーが作成される挙動もサポート。加えて `/public/register.html` でガイド付きフォームを提供する。
+- `/register` エンドポイントと `/api/register` API を追加し、ユーザー自身がメール・表示名・パスワードを入力して `AppUser` に登録できるようにした。ログインフォームから新しいメールアドレスでサインインすると自動的にユーザーが作成される挙動もサポート。加えて `/public/auth/signup.html` でガイド付きフォームを提供する。
 
 #次のチャットでCodexが理解しておくべきこと
 - ログインは `AppUser` に登録したメールアドレスとハッシュ化パスワード（bcrypt）で行う。新しいユーザー追加時は `AppUser` へ INSERT し、Chainlit起動後にログインテストを行う。
 - 履歴保存は `AppDataLayer` と `.chainlit/config.toml` の設定に依存。もし再度履歴が空になる場合は `Step` テーブルの `input/output` にJSON文字列が入っているか、`AppDataLayer` が利用されているかを確認する。
-- 新規ユーザーはログイン画面で未登録のメールアドレスとパスワードを入力すると自動で登録・ログインされる。フォームによる登録フローが必要な場合は `/public/register.html` を案内するとよい。エラー時は API レスポンスに詳細が返るのでログまたはブラウザで確認する。
-- 今後はProcfile/runtime.txt作成、Heroku設定、CI/CD整備が未完了のため、デプロイ準備を進める際は既存のDB/認証変更を踏まえて進行する。
+- 新規ユーザーはログイン画面で未登録のメールアドレスとパスワードを入力すると自動で登録・ログインされる。フォームによる登録フローが必要な場合は `/public/auth/signup.html` を案内するとよい。エラー時は API レスポンスに詳細が返るのでログまたはブラウザで確認する。
+- デプロイ済みのHeroku環境とPostgreSQL本番DB、そして既存のCI/CDパイプラインを前提に、今後はテスト拡充やモニタリング導入を進める。
