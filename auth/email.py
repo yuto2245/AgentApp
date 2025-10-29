@@ -21,9 +21,20 @@ def normalize_email(value: str) -> Optional[str]:
         return None
     return email
 
-
+'''パスワードチェック→フロント側のチェックと同等の認証を実施する'''
 def is_password_valid(password: str) -> bool:
-    return bool(password) and len(password) >= 8
+    if not password or len(password) < 8:
+        return False
+    if not re.search(r"[a-z]",password):
+        return False
+    if not re.search(r"[A-Z]",password):
+        return False
+    if not re.search(r"[0-9]",password):
+        return False
+    if not re.search(r"[!@#$%^&*]", password):
+        return False
+    
+    return True
 
 
 def sanitize_role(role: Optional[str]) -> str:

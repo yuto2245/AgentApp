@@ -303,6 +303,23 @@ async def register_user(payload: RegisterRequest):
         role=row["role"],
     )
 
+@router.get("/users/count")
+async def users_count():
+    data_layer = _get_data_layer()
+    # Ensure connection (ChainlitDataLayer is lazy)
+    await data_layer.connect()
+    async with data_layer.pool.acquire() as conn:  # type: ignore[attr-defined]
+        app_user_count = await conn.fetchval('SELECT COUNT(*) FROM "AppUser"')
+        chainlit_user_count = await conn.fetchval('SELECT COUNT(*) FROM "User"')
+        mau = await conn.fetchval('SELECT COUNT(DISTINCT "userId") FROM "Thread" WHERE "createdAt" >= NOW() - INTERVAL '"'"'30 days'"'"')
+        wau = await conn.fetchval('SELECT COUNT(DISTINCT "userId") FROM "Thread" WHERE "createdAt" >= NOW() - INTERVAL '"'"'7 days'"'"')
+        dau = await conn.fetchval('SELECT COUNT(DISTINCT "userId") FROM "Thread" WHERE "createdAt" >= NOW() - INTERVAL '"'"'1 day'"'"')
+    return {
+        "app_user_count": int(app_user_count or 0),
+        "chainlit_user_count": int(chainlit_user_count or 0),
+        "active": {"MAU": int(mau or 0), "WAU": int(wau or 0), "DAU": int(dau or 0)},
+    }
+
 
 @chainlit_server_app.get("/register")
 async def register_page():
