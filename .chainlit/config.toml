@@ -129,7 +129,7 @@ default_avatar_file_url = ""
 # This can be used to customize the frontend code.
 # Be careful: If this is a relative path, it should not start with a slash.
 # custom_build = "./public/build"
- custom_build = "./public/users.html"
+# custom_build = "./public/users.html"
 
 # Specify optional one or more custom links in the header.
 # [[UI.header_links]]
