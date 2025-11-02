@@ -19,6 +19,8 @@ from auth import (
     is_password_valid,
     normalize_email,
     sanitize_role,
+    _now_utc,
+    EMAIL_VERIFICATION_REQUIRED,
 )
 from chainlit.server import app as chainlit_server_app
 from fastapi import APIRouter, HTTPException, status
@@ -320,6 +322,35 @@ async def users_count():
         "active": {"MAU": int(mau or 0), "WAU": int(wau or 0), "DAU": int(dau or 0)},
     }
 
+@chainlit_server_app.get("/verify")
+async def verify_email(token: str):
+    if not EMAIL_VERIFICATION_REQUIRED:
+        return RedirectResponse(url="/public/auth/index.html?verified=disabled")
+    data_layer = _get_data_layer()
+    await data_layer.connect()
+    async with data_layer.pool.acquire() as conn:
+        row = await conn.fetchrow(
+            '''
+            SELECT id, token_expiry
+            FROM "AppUser"
+            WHERE email_token = $1
+            ''',
+            token,
+        )
+        if not row:
+            raise HTTPException(status_code=404, detail="無効なトークンです。")
+        if row["token_expiry"] and row["token_expiry"] < _now_utc():
+            raise HTTPException(status_code=400, detail="トークンの有効期限が切れています。")
+        await conn.execute(
+            '''
+            UPDATE "AppUser"
+            SET status = 'active', email_token = NULL, token_expiry = NULL, "updatedAt" = NOW()
+            WHERE id = $1
+            ''',
+            row["id"],
+        )
+        #ユーザー登録の完了後、ログイン画面にリダイレクト
+        return RedirectResponse(url="/public/auth/index.html?verified=success")
 
 @chainlit_server_app.get("/register")
 async def register_page():

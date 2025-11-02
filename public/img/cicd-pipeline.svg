@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="340" viewBox="0 0 960 340">
+  <style>
+    .stage { fill: #f4f7ff; stroke: #2f3b63; stroke-width: 1.4; rx: 14; ry: 14; }
+    .title { font-family: "Helvetica", sans-serif; font-size: 16px; font-weight: 700; fill: #1b2553; }
+    .text { font-family: "Helvetica", sans-serif; font-size: 13px; fill: #1b2553; }
+    .arrow { stroke: #3451b2; stroke-width: 1.6; marker-end: url(#arrowhead); fill: none; }
+    .note { font-family: "Helvetica", sans-serif; font-size: 13px; fill: #46507a; font-style: italic; }
+  </style>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#3451b2"/>
+    </marker>
+  </defs>
+
+  <rect class="stage" x="40" y="80" width="160" height="120"/>
+  <text class="title" x="120" y="110" text-anchor="middle">Developer</text>
+  <text class="text" x="120" y="140" text-anchor="middle">Git commit / push</text>
+  <text class="text" x="120" y="160" text-anchor="middle">Feature branch</text>
+
+  <rect class="stage" x="240" y="80" width="180" height="120"/>
+  <text class="title" x="330" y="110" text-anchor="middle">GitHub Repo</text>
+  <text class="text" x="330" y="140" text-anchor="middle">Pull Request</text>
+  <text class="text" x="330" y="160" text-anchor="middle">Branch protection</text>
+
+  <rect class="stage" x="460" y="60" width="180" height="160"/>
+  <text class="title" x="550" y="95" text-anchor="middle">GitHub Actions</text>
+  <text class="text" x="550" y="125" text-anchor="middle">Install deps</text>
+  <text class="text" x="550" y="145" text-anchor="middle">Lint &amp; unit tests</text>
+  <text class="text" x="550" y="165" text-anchor="middle">Artifact build</text>
+
+  <rect class="stage" x="680" y="80" width="180" height="120"/>
+  <text class="title" x="770" y="110" text-anchor="middle">Heroku Deploy</text>
+  <text class="text" x="770" y="140" text-anchor="middle">git push heroku</text>
+  <text class="text" x="770" y="160" text-anchor="middle">Release phase</text>
+
+  <rect class="stage" x="840" y="200" width="80" height="100"/>
+  <text class="title" x="880" y="230" text-anchor="middle" font-size="14">Logs</text>
+  <text class="text" x="880" y="252" text-anchor="middle">heroku logs</text>
+  <text class="text" x="880" y="272" text-anchor="middle">alerts</text>
+
+  <rect class="stage" x="680" y="220" width="180" height="90"/>
+  <text class="title" x="770" y="250" text-anchor="middle">End Users</text>
+  <text class="text" x="770" y="272" text-anchor="middle">HTTPS access</text>
+
+  <!-- Arrows -->
+  <line class="arrow" x1="200" y1="140" x2="240" y2="140"/>
+  <line class="arrow" x1="420" y1="140" x2="460" y2="140"/>
+  <line class="arrow" x1="640" y1="140" x2="680" y2="140"/>
+  <line class="arrow" x1="770" y1="200" x2="770" y2="220"/>
+
+  <line class="arrow" x1="770" y1="140" x2="840" y2="230"/>
+  <text class="note" x="806" y="185" text-anchor="start">Monitoring / rollback</text>
+
+  <line class="arrow" x1="770" y1="140" x2="770" y2="90"/>
+  <text class="note" x="785" y="100">Config Vars / secrets</text>
+</svg>

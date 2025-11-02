@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="560" viewBox="0 0 860 560">
+  <style>
+    .lane { stroke: #2f3b63; stroke-width: 1.4; }
+    .actor { font-family: "Helvetica", sans-serif; font-size: 16px; font-weight: 600; fill: #1b2553; }
+    .note { font-family: "Helvetica", sans-serif; font-size: 14px; fill: #1b2553; }
+    .box { fill: #f6f8ff; stroke: #3451b2; stroke-width: 1.4; rx: 8; ry: 8; }
+    .arrow { stroke: #3451b2; stroke-width: 1.4; marker-end: url(#arrowhead); fill: none; }
+    .lifeline { stroke-dasharray: 6 6; stroke: #9ba6d1; stroke-width: 1.2; }
+  </style>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#3451b2"/>
+    </marker>
+  </defs>
+
+  <!-- Actors -->
+  <text class="actor" x="70" y="40" text-anchor="middle">User / Browser</text>
+  <line class="lifeline" x1="70" y1="60" x2="70" y2="520"/>
+
+  <text class="actor" x="250" y="40" text-anchor="middle">AgentApp UI</text>
+  <line class="lifeline" x1="250" y1="60" x2="250" y2="520"/>
+
+  <text class="actor" x="430" y="40" text-anchor="middle">/api/register</text>
+  <line class="lifeline" x1="430" y1="60" x2="430" y2="520"/>
+
+  <text class="actor" x="610" y="40" text-anchor="middle">Postgres</text>
+  <line class="lifeline" x1="610" y1="60" x2="610" y2="520"/>
+
+  <text class="actor" x="790" y="40" text-anchor="middle">External LLM</text>
+  <line class="lifeline" x1="790" y1="60" x2="790" y2="520"/>
+
+  <!-- Registration -->
+  <rect class="box" x="110" y="80" width="280" height="40"/>
+  <text class="note" x="250" y="105" text-anchor="middle">登録フォームを開く</text>
+
+  <line class="arrow" x1="70" y1="140" x2="250" y2="140"/>
+  <text class="note" x="160" y="132" text-anchor="middle">フォーム入力</text>
+
+  <line class="arrow" x1="250" y1="170" x2="430" y2="170"/>
+  <text class="note" x="340" y="162" text-anchor="middle">POST /api/register</text>
+
+  <line class="arrow" x1="430" y1="200" x2="610" y2="200"/>
+  <text class="note" x="520" y="192" text-anchor="middle">INSERT AppUser</text>
+
+  <line class="arrow" x1="610" y1="230" x2="430" y2="230"/>
+  <text class="note" x="520" y="222" text-anchor="middle">登録結果</text>
+
+  <line class="arrow" x1="430" y1="260" x2="250" y2="260"/>
+  <text class="note" x="340" y="252" text-anchor="middle">201 + 認証メール送信</text>
+
+  <line class="arrow" x1="250" y1="290" x2="70" y2="290"/>
+  <text class="note" x="160" y="282" text-anchor="middle">登録完了メッセージ</text>
+
+  <!-- Login -->
+  <rect class="box" x="110" y="320" width="280" height="40"/>
+  <text class="note" x="250" y="345" text-anchor="middle">ログインフォーム提出</text>
+
+  <line class="arrow" x1="250" y1="380" x2="430" y2="380"/>
+  <text class="note" x="340" y="372" text-anchor="middle">認証リクエスト</text>
+
+  <line class="arrow" x1="430" y1="410" x2="610" y2="410"/>
+  <text class="note" x="520" y="402" text-anchor="middle">SELECT AppUser</text>
+
+  <line class="arrow" x1="610" y1="440" x2="430" y2="440"/>
+  <text class="note" x="520" y="432" text-anchor="middle">認証可否</text>
+
+  <line class="arrow" x1="430" y1="470" x2="610" y2="470"/>
+  <text class="note" x="520" y="462" text-anchor="middle">UPSERT User</text>
+
+  <line class="arrow" x1="430" y1="500" x2="250" y2="500"/>
+  <text class="note" x="340" y="492" text-anchor="middle">セッション確立</text>
+
+  <!-- Chat round-trip -->
+  <line class="arrow" x1="250" y1="530" x2="610" y2="530"/>
+  <text class="note" x="430" y="522" text-anchor="middle">Thread/Step 永続化</text>
+</svg>

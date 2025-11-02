@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="600" viewBox="0 0 1120 600">
+  <style>
+    .panel { fill: #f7f8ff; stroke: #283560; stroke-width: 1.6; rx: 24; ry: 24; }
+    .card { fill: #eef1ff; stroke: #3a4d88; stroke-width: 1.4; rx: 16; ry: 16; }
+    .title { font-family: "Helvetica", sans-serif; font-size: 22px; font-weight: 700; fill: #1b2553; }
+    .label { font-family: "Helvetica", sans-serif; font-size: 16px; fill: #1b2553; }
+    .small { font-family: "Helvetica", sans-serif; font-size: 14px; fill: #1b2553; }
+    .note { font-family: "Helvetica", sans-serif; font-size: 14px; fill: #32447a; font-style: italic; }
+    .arrow { stroke: #3a4d88; stroke-width: 1.6; marker-end: url(#arrowhead); fill: none; }
+    .dashed { stroke-dasharray: 6 6; }
+  </style>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#3a4d88"/>
+    </marker>
+  </defs>
+
+  <!-- Client -->
+  <rect class="panel" x="40" y="80" width="240" height="220"/>
+  <text class="title" x="160" y="115" text-anchor="middle">Client</text>
+  <rect class="card" x="70" y="140" width="180" height="65"/>
+  <text class="label" x="160" y="175" text-anchor="middle">End User</text>
+  <rect class="card" x="70" y="220" width="180" height="65"/>
+  <text class="label" x="160" y="250" text-anchor="middle">Web Browser</text>
+  <text class="small" x="160" y="268" text-anchor="middle">(Chainlit UI)</text>
+
+  <!-- Heroku Production -->
+  <rect class="panel" x="330" y="60" width="360" height="260"/>
+  <text class="title" x="510" y="95" text-anchor="middle">Heroku Production</text>
+  <rect class="card" x="360" y="130" width="300" height="80"/>
+  <text class="label" x="510" y="165" text-anchor="middle">AgentApp (Chainlit)</text>
+  <text class="small" x="510" y="185" text-anchor="middle">FastAPI router / chat orchestration</text>
+  <rect class="card" x="360" y="230" width="300" height="70"/>
+  <text class="label" x="510" y="265" text-anchor="middle">Heroku Postgres</text>
+  <text class="small" x="510" y="285" text-anchor="middle">AppUser / User / Thread / Step …</text>
+
+  <!-- External LLM -->
+  <rect class="panel" x="740" y="60" width="320" height="300"/>
+  <text class="title" x="900" y="95" text-anchor="middle">External LLM Providers</text>
+  <rect class="card" x="770" y="140" width="260" height="55"/>
+  <text class="label" x="900" y="172" text-anchor="middle">OpenAI API</text>
+  <rect class="card" x="770" y="205" width="260" height="55"/>
+  <text class="label" x="900" y="237" text-anchor="middle">Google Gemini API</text>
+  <rect class="card" x="770" y="270" width="260" height="55"/>
+  <text class="label" x="900" y="302" text-anchor="middle">Anthropic API</text>
+  <rect class="card" x="770" y="335" width="260" height="55"/>
+  <text class="label" x="900" y="367" text-anchor="middle">xAI API</text>
+
+  <!-- DevOps Tooling -->
+  <rect class="panel" x="320" y="350" width="390" height="190"/>
+  <text class="title" x="515" y="385" text-anchor="middle">DevOps Tooling</text>
+  <rect class="card" x="350" y="415" width="160" height="65"/>
+  <text class="label" x="430" y="450" text-anchor="middle">GitHub Repo</text>
+  <rect class="card" x="530" y="415" width="160" height="65"/>
+  <text class="label" x="610" y="450" text-anchor="middle">GitHub Actions</text>
+  <rect class="card" x="440" y="490" width="160" height="60"/>
+  <text class="label" x="520" y="520" text-anchor="middle">Heroku CLI / Git</text>
+
+  <!-- Arrows / Relations -->
+  <line class="arrow" x1="280" y1="200" x2="360" y2="170"/>
+  <text class="note" x="320" y="170" text-anchor="middle">HTTPS</text>
+
+  <line class="arrow" x1="510" y1="210" x2="510" y2="230"/>
+  <text class="note" x="530" y="220">Persist chat &amp; users</text>
+
+  <line class="arrow" x1="660" y1="190" x2="770" y2="167"/>
+  <text class="note" x="720" y="160" text-anchor="middle">LLM requests</text>
+
+  <line class="arrow" x1="660" y1="225" x2="770" y2="225"/>
+  <line class="arrow" x1="660" y1="260" x2="770" y2="283"/>
+  <line class="arrow" x1="660" y1="295" x2="770" y2="343"/>
+
+  <line class="arrow" x1="430" y1="415" x2="430" y2="340"/>
+  <text class="note" x="410" y="375" text-anchor="end">Source</text>
+
+  <line class="arrow" x1="430" y1="450" x2="530" y2="450"/>
+  <text class="note" x="480" y="438" text-anchor="middle">PR / pipeline trigger</text>
+
+  <line class="arrow" x1="610" y1="415" x2="610" y2="340"/>
+  <text class="note" x="630" y="380">Run CI</text>
+
+  <line class="arrow" x1="520" y1="490" x2="520" y2="320"/>
+  <text class="note" x="540" y="455">Deploy</text>
+
+  <line class="arrow dashed" x1="520" y1="520" x2="360" y2="250"/>
+  <text class="note" x="410" y="350" text-anchor="middle">Migrates DB</text>
+
+  <line class="arrow dashed" x1="610" y1="480" x2="900" y2="390"/>
+  <text class="note" x="770" y="440" text-anchor="middle">API keys / secrets</text>
+</svg>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520">
+  <style>
+    .group { fill: #f8f9ff; stroke: #2f3b63; stroke-width: 1.5; rx: 18; ry: 18; }
+    .service { fill: #eef1ff; stroke: #3a4d88; stroke-width: 1.4; rx: 14; ry: 14; }
+    .title { font-family: "Helvetica", sans-serif; font-size: 18px; font-weight: 700; fill: #1b2553; }
+    .text { font-family: "Helvetica", sans-serif; font-size: 14px; fill: #1b2553; }
+    .arrow { stroke: #3451b2; stroke-width: 1.6; marker-end: url(#arrowhead); fill: none; }
+  </style>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#3451b2"/>
+    </marker>
+  </defs>
+
+  <!-- Client -->
+  <rect class="group" x="40" y="40" width="200" height="200"/>
+  <text class="title" x="140" y="70" text-anchor="middle">Client</text>
+  <rect class="service" x="70" y="100" width="140" height="60"/>
+  <text class="text" x="140" y="130" text-anchor="middle">Web Browser</text>
+  <text class="text" x="140" y="150" text-anchor="middle">Chainlit UI</text>
+
+  <!-- Chainlit App -->
+  <rect class="group" x="280" y="40" width="320" height="400"/>
+  <text class="title" x="440" y="70" text-anchor="middle">AgentApp (FastAPI + Chainlit)</text>
+  <rect class="service" x="310" y="110" width="260" height="70"/>
+  <text class="text" x="440" y="140" text-anchor="middle">Chainlit Server</text>
+  <text class="text" x="440" y="158" text-anchor="middle">UI &amp; WebSocket</text>
+
+  <rect class="service" x="310" y="200" width="260" height="70"/>
+  <text class="text" x="440" y="230" text-anchor="middle">FastAPI Router</text>
+  <text class="text" x="440" y="248" text-anchor="middle">/api/register, /api/users/*</text>
+
+  <rect class="service" x="310" y="290" width="260" height="70"/>
+  <text class="text" x="440" y="320" text-anchor="middle">Auth &amp; Data Layer</text>
+  <text class="text" x="440" y="338" text-anchor="middle">bcrypt, asyncpg, AppUser</text>
+
+  <!-- Postgres -->
+  <rect class="group" x="640" y="60" width="260" height="170"/>
+  <text class="title" x="770" y="90" text-anchor="middle">Heroku Postgres</text>
+  <rect class="service" x="670" y="120" width="200" height="70"/>
+  <text class="text" x="770" y="150" text-anchor="middle">schema_chainlit.sql</text>
+  <text class="text" x="770" y="168" text-anchor="middle">User / AppUser / Threads</text>
+
+  <!-- External Services -->
+  <rect class="group" x="640" y="260" width="260" height="160"/>
+  <text class="title" x="770" y="290" text-anchor="middle">External Services</text>
+  <rect class="service" x="670" y="320" width="200" height="80"/>
+  <text class="text" x="770" y="350" text-anchor="middle">LLM APIs</text>
+  <text class="text" x="770" y="368" text-anchor="middle">OpenAI / Gemini / Anthropic / xAI</text>
+
+  <!-- Arrows -->
+  <line class="arrow" x1="240" y1="150" x2="280" y2="150"/>
+  <text class="text" x="260" y="140" text-anchor="middle">HTTPS</text>
+
+  <line class="arrow" x1="240" y1="240" x2="280" y2="240"/>
+  <text class="text" x="260" y="230" text-anchor="middle">REST</text>
+
+  <line class="arrow" x1="570" y1="240" x2="640" y2="180"/>
+  <text class="text" x="610" y="210" text-anchor="middle">asyncpg</text>
+
+  <line class="arrow" x1="570" y1="320" x2="640" y2="320"/>
+  <text class="text" x="605" y="310" text-anchor="middle">LLM API calls</text>
+</svg>

@@ -11,6 +11,9 @@ CREATE TABLE IF NOT EXISTS "User" (
 CREATE TABLE IF NOT EXISTS "AppUser" (
   id UUID PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
+  "status" TEXT NOT NULL DEFAULT 'temporary',
+  "email_token" TEXT,
+  "token_expiry" TIMESTAMPTZ,
   password_hash TEXT NOT NULL,
   display_name TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'member',

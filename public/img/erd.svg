@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="620" viewBox="0 0 960 620">
+  <style>
+    .table { fill: #fffefe; stroke: #2f3b63; stroke-width: 1.6; }
+    .header { fill: #e9ecff; stroke: #2f3b63; stroke-width: 1.6; }
+    .title { font-family: "Helvetica", sans-serif; font-size: 18px; font-weight: 700; fill: #1b2553; }
+    .field { font-family: "Helvetica", sans-serif; font-size: 14px; fill: #1b2553; }
+    .key { font-weight: 700; }
+    .link { stroke: #364780; stroke-width: 1.5; marker-end: url(#arrowhead); fill: none; }
+  </style>
+
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#364780"/>
+    </marker>
+  </defs>
+
+  <!-- AppUser -->
+  <rect class="table" x="40" y="60" width="220" height="210" rx="12" ry="12"/>
+  <rect class="header" x="40" y="60" width="220" height="44" rx="12" ry="12"/>
+  <text class="title" x="150" y="88" text-anchor="middle">AppUser</text>
+  <text class="field key" x="60" y="120">id (UUID, PK)</text>
+  <text class="field" x="60" y="145">email (TEXT, UQ)</text>
+  <text class="field" x="60" y="170">password_hash (TEXT)</text>
+  <text class="field" x="60" y="195">display_name (TEXT)</text>
+  <text class="field" x="60" y="220">role (TEXT)</text>
+  <text class="field" x="60" y="245">status (TEXT)</text>
+  <text class="field" x="60" y="270">email_token (TEXT)</text>
+  <text class="field" x="60" y="295">token_expiry (TIMESTAMPTZ)</text>
+
+  <!-- User -->
+  <rect class="table" x="360" y="60" width="220" height="180" rx="12" ry="12"/>
+  <rect class="header" x="360" y="60" width="220" height="44" rx="12" ry="12"/>
+  <text class="title" x="470" y="88" text-anchor="middle">User</text>
+  <text class="field key" x="380" y="120">id (UUID, PK)</text>
+  <text class="field" x="380" y="145">identifier (TEXT, UQ)</text>
+  <text class="field" x="380" y="170">metadata (JSONB)</text>
+  <text class="field" x="380" y="195">createdAt (TIMESTAMPTZ)</text>
+  <text class="field" x="380" y="220">updatedAt (TIMESTAMPTZ)</text>
+
+  <!-- Thread -->
+  <rect class="table" x="680" y="40" width="240" height="230" rx="12" ry="12"/>
+  <rect class="header" x="680" y="40" width="240" height="44" rx="12" ry="12"/>
+  <text class="title" x="800" y="68" text-anchor="middle">Thread</text>
+  <text class="field key" x="700" y="100">id (UUID, PK)</text>
+  <text class="field" x="700" y="125">name (TEXT)</text>
+  <text class="field" x="700" y="150">userId (UUID, FK → User)</text>
+  <text class="field" x="700" y="175">metadata (JSONB)</text>
+  <text class="field" x="700" y="200">tags (JSONB)</text>
+  <text class="field" x="700" y="225">createdAt (TIMESTAMPTZ)</text>
+  <text class="field" x="700" y="250">updatedAt (TIMESTAMPTZ)</text>
+  <text class="field" x="700" y="275">deletedAt (TIMESTAMPTZ)</text>
+
+  <!-- Step -->
+  <rect class="table" x="80" y="340" width="260" height="240" rx="12" ry="12"/>
+  <rect class="header" x="80" y="340" width="260" height="44" rx="12" ry="12"/>
+  <text class="title" x="210" y="368" text-anchor="middle">Step</text>
+  <text class="field key" x="100" y="400">id (UUID, PK)</text>
+  <text class="field" x="100" y="425">threadId (UUID, FK → Thread)</text>
+  <text class="field" x="100" y="450">parentId (UUID, FK → Step)</text>
+  <text class="field" x="100" y="475">input (JSONB)</text>
+  <text class="field" x="100" y="500">metadata (JSONB)</text>
+  <text class="field" x="100" y="525">output (JSONB)</text>
+  <text class="field" x="100" y="550">type (TEXT)</text>
+  <text class="field" x="100" y="575">startTime/endTime (TIMESTAMPTZ)</text>
+
+  <!-- Element -->
+  <rect class="table" x="380" y="320" width="240" height="250" rx="12" ry="12"/>
+  <rect class="header" x="380" y="320" width="240" height="44" rx="12" ry="12"/>
+  <text class="title" x="500" y="348" text-anchor="middle">Element</text>
+  <text class="field key" x="400" y="380">id (UUID, PK)</text>
+  <text class="field" x="400" y="405">threadId (UUID, FK → Thread)</text>
+  <text class="field" x="400" y="430">stepId (UUID, FK → Step)</text>
+  <text class="field" x="400" y="455">metadata (JSONB)</text>
+  <text class="field" x="400" y="480">mime / name / url</text>
+  <text class="field" x="400" y="505">chainlitKey / objectKey</text>
+  <text class="field" x="400" y="530">display / size / language</text>
+  <text class="field" x="400" y="555">autoPlay / playerConfig</text>
+
+  <!-- Feedback -->
+  <rect class="table" x="700" y="340" width="220" height="200" rx="12" ry="12"/>
+  <rect class="header" x="700" y="340" width="220" height="44" rx="12" ry="12"/>
+  <text class="title" x="810" y="368" text-anchor="middle">Feedback</text>
+  <text class="field key" x="720" y="400">id (UUID, PK)</text>
+  <text class="field" x="720" y="425">stepId (UUID, FK → Step)</text>
+  <text class="field" x="720" y="450">name (TEXT)</text>
+  <text class="field" x="720" y="475">value (DOUBLE)</text>
+  <text class="field" x="720" y="500">comment (TEXT)</text>
+  <text class="field" x="720" y="525">createdAt / updatedAt</text>
+
+  <!-- Relations -->
+  <line class="link" x1="260" y1="150" x2="360" y2="150" />
+  <text class="field" x="310" y="140" text-anchor="middle">Login sync</text>
+
+  <line class="link" x1="580" y1="170" x2="680" y2="170" />
+  <text class="field" x="630" y="160" text-anchor="middle">User 1..* Thread</text>
+
+  <line class="link" x1="210" y1="340" x2="210" y2="270" />
+  <text class="field" x="225" y="310">Thread 1..* Step</text>
+
+  <line class="link" x1="500" y1="320" x2="500" y2="240" />
+  <text class="field" x="515" y="290">Thread 1..* Element</text>
+
+  <line class="link" x1="310" y1="470" x2="380" y2="470" />
+  <text class="field" x="345" y="460" text-anchor="middle">Step 1..* Element</text>
+
+  <line class="link" x1="600" y1="430" x2="700" y2="430" />
+  <text class="field" x="650" y="420" text-anchor="middle">Step 1..* Feedback</text>
+</svg>

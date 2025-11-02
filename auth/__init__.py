@@ -4,6 +4,8 @@ from .email import (
     is_password_valid,
     normalize_email,
     sanitize_role,
+    _now_utc,
+    EMAIL_VERIFICATION_REQUIRED,
 )
 
 __all__ = [
@@ -12,4 +14,6 @@ __all__ = [
     "is_password_valid",
     "normalize_email",
     "sanitize_role",
+    "_now_utc",
+    "EMAIL_VERIFICATION_REQUIRED",
 ]
