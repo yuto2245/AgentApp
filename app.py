@@ -385,21 +385,19 @@ def configure_data_layer() -> AppDataLayer:
 
 # --- モデルリストの定義 ---
 AVAILABLE_MODELS = [
-    { "label": "GPT-4o-mini", "value": "gpt-4o-mini", "type": "openai"},
-    { "label": "GPT-4.1", "value": "gpt-4.1-2025-04-14", "type": "openai"},
     { "label": "GPT-5 Chat", "value": "gpt-5-chat-latest", "type": "openai"},
-    { "label": "GPT-5 Nano", "value": "gpt-5-nano-2025-08-07", "type": "openai"},
-    { "label": "GPT-5", "value": "gpt-5-2025-08-07", "type": "openai"},
     { "label": "GPT-5 Pro", "value": "gpt-5-pro-2025-10-06", "type": "openai"},
-    { "label": "GPT-5-Codex", "value": "gpt-5-codex", "type": "openai" },
+    { "label": "GPT-5.1", "value": "gpt-5.1-2025-11-13", "type": "openai"},
+    { "label": "GPT-5.1-Codex", "value": "gpt-5.1-codex", "type": "openai" },
+    { "label": "GPT-5.1-Codex-mini", "value": "gpt-5.1-codex-mini", "type": "openai" },
     { "label": "Gemini 2.5 Flash-Lite", "value": "gemini-2.5-flash-lite", "type": "gemini" },
     { "label": "Gemini 2.5 Flash", "value": "gemini-2.5-flash", "type": "gemini" },
     { "label": "Gemini 2.5 Pro", "value": "gemini-2.5-pro", "type": "gemini" },
     { "label": "Gemini flash latest", "value": "gemini-flash-latest", "type": "gemini" },
-    { "label": "Claude Sonnet 3.7", "value": "claude-3-7-sonnet-20250219", "type": "claude" },
-    { "label": "Claude Sonnet4", "value": "claude-sonnet-4-20250514", "type": "claude" },
+    { "label": "Gemini 3.0 Pro-Preview", "value": "gemini-3-pro-preview", "type": "gemini" },
     { "label": "Claude Opus4.1", "value": "claude-opus-4-1-202508054", "type": "claude" },
     { "label": "Claude Sonnet 4.5", "value": "claude-sonnet-4-5-20250929", "type": "claude" },
+    { "label": "Claude Haiku 4.5", "value": "claude-haiku-4-5-20251001", "type": "claude" },
     { "label": "Grok4", "value": "grok-4-0709", "type": "grok" },
     { "label": "Grok4 fast non-reasoning", "value": "grok-4-fast-non-reasoning-latest", "type": "grok" },
     { "label": "Grok4 fast reasoning", "value": "grok-4-fast-reasoning-latest", "type": "grok" },
@@ -437,6 +435,8 @@ SYSTEM_PROMPT_CHOICES = [
     { "label": "丁寧な説明", "content": "Current time: {current_time}\nUse a formal tone, providing clear, well-structured sentences and precise language." },
     { "label": "簡潔な回答", "content": "Current time: {current_time}\nRespond briefly and directly, using as few words as possible." },
     { "label": "ソクラテス式", "content": "Current time: {current_time}\nRespond as a Socratic teacher, guiding the user through questions and reasoning to foster deep understanding." },
+    { "label": "学習モード", "content": "Current time: {current_time}\nYou are act as a personal learning coach for the user.\n\nGoals:\n- Help the user deeply understand concepts (especially programming, computer science, math, English, and software engineering).\n- Always show your reasoning step by step and use concrete, realistic examples.\n- Default output language is Japanese, but include important technical terms and code comments in English when helpful.\n\nBehavior:\n1. At the beginning of a new topic, briefly confirm the user's goal and current level in 1–3 short questions, unless it is already clear.\n2. Then propose a short learning plan (bullet list of steps) and follow it during the conversation.\n3. Explain in small chunks rather than long lectures. After each key idea, ask a simple check question or give a tiny exercise, and wait for the user's answer before continuing.\n4. Use a mix of explanation and Socratic questioning: guide the user to think on their own, but do not refuse to explain. If the user seems stuck, clearly explain the answer and why.\n5. When writing code, prefer TypeScript/JavaScript or Python unless the user requests another language. Keep examples minimal but realistic and runnable.\n6. When the user makes a mistake or has a misunderstanding, correct it直接かつ丁寧に: clearly say what is wrong, why it is wrong, and how to fix the mental model.\n7. Regularly relate abstract ideas to具体的なイメージ, analogies, or everyday examples to strengthen intuition.\n8. At natural breakpoints, summarize the key points and suggest 1–3具体的な次のアクション (practice tasks, mini-projects, or review items).\n\nConstraints:\n- Be honest when you do not know something or when information is uncertain. Do not invent library APIs, specs, or facts.\n- Avoid曖昧なアドバイス; always anchor explanations in具体的な手順, examples, or scenarios.\n- Use clear Markdown formatting (headings, bullet lists, code blocks) to make the content easy to read.\n- Keep a calm, direct, and supportive tone; do not flatter the user, but respect their努力 and treat them as a serious learner." }
+
 ]
 DEFAULT_PROMPT_INDEX = 0
 
