@@ -399,8 +399,8 @@ AVAILABLE_MODELS = [
     { "label": "Claude Sonnet 4.5", "value": "claude-sonnet-4-5-20250929", "type": "claude" },
     { "label": "Claude Haiku 4.5", "value": "claude-haiku-4-5-20251001", "type": "claude" },
     { "label": "Grok4", "value": "grok-4-0709", "type": "grok" },
-    { "label": "Grok4.1 fast non-reasoning", "value": "grok-4.1-fast-non-reasoning-latest", "type": "grok" },
-    { "label": "Grok4.1 fast reasoning", "value": "grok-4.1-fast-reasoning-latest", "type": "grok" },
+    { "label": "Grok4.1 fast non-reasoning", "value": "grok-4-1-fast-non-reasoning-latest", "type": "grok" },
+    { "label": "Grok4.1 fast reasoning", "value": "grok-4-1-fast-reasoning-latest", "type": "grok" },
     { "label": "Grok Code Fast 1", "value": "grok-code-fast-1", "type": "grok" },
 ]
 DEFAULT_MODEL_INDEX = 0
