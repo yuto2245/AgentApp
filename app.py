@@ -395,7 +395,7 @@ AVAILABLE_MODELS = [
     { "label": "Gemini 2.5 Pro", "value": "gemini-2.5-pro", "type": "gemini" },
     { "label": "Gemini flash latest", "value": "gemini-flash-latest", "type": "gemini" },
     { "label": "Gemini 3.0 Pro-Preview", "value": "gemini-3-pro-preview", "type": "gemini" },
-    { "label": "Claude Opus4.1", "value": "claude-opus-4-1-202508054", "type": "claude" },
+    { "label": "Claude Opus4.5", "value": "claude-opus-4-5-20251101", "type": "claude" },
     { "label": "Claude Sonnet 4.5", "value": "claude-sonnet-4-5-20250929", "type": "claude" },
     { "label": "Claude Haiku 4.5", "value": "claude-haiku-4-5-20251001", "type": "claude" },
     { "label": "Grok4", "value": "grok-4-0709", "type": "grok" },
