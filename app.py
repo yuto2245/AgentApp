@@ -1127,8 +1127,8 @@ async def on_message(message: cl.Message):
             messages.extend([m.content for m in api_messages])
             prompt = "\n".join(messages)
 
-            # --- API呼び出し ---
-            stream = gemini_client.models.generate_content(
+            # --- API呼び出し（ストリーミング） ---
+            stream = gemini_client.models.generate_content_stream(
                 model=model_info["value"],
                 contents=prompt,
                 config=GenerateContentConfig(
@@ -1136,15 +1136,16 @@ async def on_message(message: cl.Message):
                 )
             )
 
-            # --- レスポンスを処理（Gemini） ---
-            if hasattr(stream, "candidates") and stream.candidates:
-                candidate = stream.candidates[0]  # 最上位候補のみ採用
-                if getattr(candidate, "content", None):
-                    for part in (candidate.content.parts or []):
-                        text = getattr(part, "text", None)
-                        if text:
-                            answer_text += text
-                            await msg.stream_token(text)
+            # --- レスポンスを処理（Gemini - ストリーミング） ---
+            for chunk in stream:
+                if hasattr(chunk, "candidates") and chunk.candidates:
+                    candidate = chunk.candidates[0]
+                    if getattr(candidate, "content", None):
+                        for part in (candidate.content.parts or []):
+                            text = getattr(part, "text", None)
+                            if text:
+                                answer_text += text
+                                await msg.stream_token(text)
 
             # 会話履歴を更新
             if answer_text:
