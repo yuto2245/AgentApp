@@ -1188,13 +1188,20 @@ async def on_message(message: cl.Message):
                 await msg.update()
                 return
 
-            system_prompt = system(system_prompt)
-            prompt = user(message.content)
+            # 会話履歴を構築（Grok SDK形式に変換）
+            grok_messages = [system(system_prompt)]
+            
+            # api_messagesから会話履歴を追加
+            for m in api_messages:
+                if isinstance(m, HumanMessage):
+                    grok_messages.append(user(m.content))
+                elif isinstance(m, AIMessage):
+                    grok_messages.append(assistant(m.content))
 
             # 応答生成
             chat = xai_client.chat.create(
                 model=model_info["value"],
-                messages=[system_prompt, prompt],
+                messages=grok_messages,
                 search_parameters=SearchParameters(mode="auto"),
             )
             
